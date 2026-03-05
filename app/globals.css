@@ -201,6 +201,10 @@ body { background: var(--bg); color: var(--text); letter-spacing: -0.01em; }
 /* warm section bg */
 .warm-section { background: var(--bg-2); }
 
+/* ─── Mobile menu ─── */
+@keyframes slide-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: slide-down 0.2s ease forwards; }
+
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
