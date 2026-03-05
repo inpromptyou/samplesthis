@@ -18,7 +18,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body { background: var(--bg); color: var(--text); }
+body { background: var(--bg); color: var(--text); letter-spacing: -0.01em; }
 ::selection { background: rgba(249,115,22,0.15); }
 
 .h { font-family: var(--font-sora), system-ui, sans-serif; }
