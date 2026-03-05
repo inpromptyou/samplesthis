@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import LiveCounter from "@/components/LiveCounter";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const SAMPLE_JOBS = [
@@ -46,23 +45,19 @@ export default function Home() {
           <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[var(--bg)] to-transparent z-10" />
 
           <div className="relative z-20 max-w-[1000px] mx-auto px-6 text-center pt-32 pb-20">
-            <div className="hero-anim ha-1 mb-8">
-              <LiveCounter size="lg" />
-            </div>
-
-            <h1 className="h text-[clamp(2.5rem,8vw,5.5rem)] font-extrabold leading-[0.92] tracking-[-0.04em] mb-7 hero-anim ha-2">
+            <h1 className="h text-[clamp(2.5rem,8vw,5.5rem)] font-extrabold leading-[0.92] tracking-[-0.04em] mb-7 hero-anim ha-1">
               <span className="grad-text-white">Find the flinch</span>
               <br />
               <span className="grad-text">before your users do.</span>
             </h1>
 
-            <p className="text-[clamp(15px,1.8vw,18px)] text-[var(--text-muted)] max-w-[540px] mx-auto mb-10 leading-[1.7] hero-anim ha-3">
+            <p className="text-[clamp(15px,1.8vw,18px)] text-[var(--text-muted)] max-w-[540px] mx-auto mb-10 leading-[1.7] hero-anim ha-2">
               Post a test job with your budget. Real humans matched to your
               target audience find every friction point, broken flow, and
               confusing moment in your app.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center hero-anim ha-4">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center hero-anim ha-3">
               <Link href="/become-a-tester" className="btn btn-white btn-lg btn-pill">
                 Become a tester
               </Link>
@@ -71,7 +66,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <p className="h text-[11px] font-medium text-white/15 mt-6 tracking-wide hero-anim ha-5">
+            <p className="h text-[11px] font-medium text-white/15 mt-6 tracking-wide hero-anim ha-4">
               SET YOUR OWN BUDGET &middot; PAY PER TESTER &middot; RESULTS IN HOURS
             </p>
           </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import LiveCounter from "@/components/LiveCounter";
+
 
 const AGE_RANGES = ["18-24", "25-34", "35-44", "45-54", "55+"];
 
@@ -74,7 +74,6 @@ export default function BecomeATester() {
                 We&apos;ll match you with apps that fit your profile and reach out when there&apos;s a test ready.
                 Most testers get their first test within 48 hours.
               </p>
-              <LiveCounter size="lg" />
             </div>
           ) : (
             <>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import LiveCounter from "./LiveCounter";
+
 
 const MENUS = [
   {
@@ -85,7 +85,6 @@ export default function Nav() {
 
         {/* Right */}
         <div className="hidden lg:flex items-center gap-4">
-          <LiveCounter />
           <Link href="/submit" className="btn btn-primary btn-pill text-[13px] !py-2.5 !px-6">
             Post a test
           </Link>
@@ -127,7 +126,6 @@ export default function Nav() {
               </div>
             ))}
             <div className="pt-4 space-y-3 border-t border-white/[0.04]">
-              <LiveCounter />
               <Link href="/submit" onClick={() => setOpen(false)} className="btn btn-primary btn-pill w-full">Post a test</Link>
             </div>
           </div>
