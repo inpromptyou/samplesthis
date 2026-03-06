@@ -69,7 +69,11 @@ export default function ExplorePage() {
 
   useEffect(() => {
     fetch("/api/testers/me").then(r => r.json()).then(d => {
-      if (d.authenticated) setTester(d.tester);
+      if (d.authenticated) {
+        // Logged in — send them to dashboard explore tab
+        router.push("/dashboard?tab=explore");
+        return;
+      }
     }).catch(() => {});
     fetch("/api/orders").then(r => r.json()).then(d => {
       setJobs(d.jobs || []);

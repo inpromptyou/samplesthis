@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Tester {
   id: number;
@@ -40,23 +40,67 @@ interface MyApp {
 
 const NAV_ITEMS = [
   { key: "overview", label: "Overview", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  { key: "explore", label: "Explore Jobs", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
   { key: "myjobs", label: "My Jobs", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
-  { key: "explore", label: "Explore Jobs", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z", href: "/explore" },
   { key: "payouts", label: "Payouts", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { key: "profile", label: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
 
-export default function Dashboard() {
+const SORT_OPTIONS = ["Newest", "Highest pay", "Most spots"];
+const TYPE_FILTERS = ["All", "Web App", "Mobile App", "SaaS", "E-commerce", "Other"];
+
+function dom(url: string) {
+  try { return new URL(url).hostname.replace("www.", ""); } catch { return url; }
+}
+
+function avatarColor(s: string) {
+  const colors = ["#F97316", "#EF4444", "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EC4899", "#6366F1"];
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+interface ExploreJob {
+  id: number;
+  app_url: string;
+  app_type: string | null;
+  description: string | null;
+  testers_count: number;
+  price_per_tester_cents: number;
+  applications_count: number;
+  accepted_count: number;
+  created_at: string;
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-[var(--text-dim)]">Loading...</div></div>}>
+      <Dashboard />
+    </Suspense>
+  );
+}
+
+function Dashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tester, setTester] = useState<Tester | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState(searchParams.get("tab") || "overview");
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectStatus, setConnectStatus] = useState<{ onboarded: boolean; hasAccount: boolean } | null>(null);
   const [myApps, setMyApps] = useState<MyApp[]>([]);
   const [myAppsLoading, setMyAppsLoading] = useState(false);
   const [submitForm, setSubmitForm] = useState<{ id: number; feedback: string; recording: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Explore tab state
+  const [exploreJobs, setExploreJobs] = useState<ExploreJob[]>([]);
+  const [exploreLoading, setExploreLoading] = useState(false);
+  const [exploreSearch, setExploreSearch] = useState("");
+  const [exploreSort, setExploreSort] = useState("Newest");
+  const [exploreFilter, setExploreFilter] = useState("All");
+  const [applying, setApplying] = useState<number | null>(null);
+  const [appliedSet, setAppliedSet] = useState<Set<number>>(new Set());
+  const [applyError, setApplyError] = useState("");
 
   useEffect(() => {
     fetch("/api/testers/me")
@@ -77,7 +121,22 @@ export default function Dashboard() {
       setMyAppsLoading(true);
       fetch("/api/applications/mine").then(r => r.json()).then(d => { setMyApps(d.applications || []); setMyAppsLoading(false); }).catch(() => setMyAppsLoading(false));
     }
+    if (tab === "explore") {
+      setExploreLoading(true);
+      fetch("/api/orders").then(r => r.json()).then(d => { setExploreJobs(d.jobs || []); setExploreLoading(false); }).catch(() => setExploreLoading(false));
+    }
   }, [tab]);
+
+  const applyToJob = async (jobId: number) => {
+    setApplying(jobId); setApplyError("");
+    try {
+      const res = await fetch("/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_id: jobId }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAppliedSet(prev => new Set(prev).add(jobId));
+    } catch (e: unknown) { setApplyError(e instanceof Error ? e.message : "Failed to apply"); }
+    setApplying(null);
+  };
 
   const submitResults = async () => {
     if (!submitForm || !submitForm.feedback) return;
@@ -245,6 +304,105 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {tab === "explore" && (() => {
+          const filtered = exploreJobs
+            .filter(j => {
+              const q = exploreSearch.toLowerCase();
+              if (q && !dom(j.app_url).toLowerCase().includes(q) && !(j.description || "").toLowerCase().includes(q) && !(j.app_type || "").toLowerCase().includes(q)) return false;
+              if (exploreFilter !== "All" && (j.app_type || "").toLowerCase() !== exploreFilter.toLowerCase()) return false;
+              return true;
+            })
+            .sort((a, b) => {
+              if (exploreSort === "Highest pay") return (b.price_per_tester_cents || 0) - (a.price_per_tester_cents || 0);
+              if (exploreSort === "Most spots") return (b.testers_count - b.accepted_count) - (a.testers_count - a.accepted_count);
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+          return (
+            <div>
+              <h1 className="h text-xl font-bold text-[var(--text)] mb-6">Explore jobs</h1>
+              {/* Search + sort */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <input type="text" placeholder="Search jobs..." value={exploreSearch} onChange={e => setExploreSearch(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-black/[0.08] pl-10 pr-4 text-[13px] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-black/[0.15]" />
+                </div>
+                <select value={exploreSort} onChange={e => setExploreSort(e.target.value)}
+                  className="h-10 rounded-xl border border-black/[0.08] px-3 text-[13px] text-[var(--text-muted)] bg-white focus:outline-none shrink-0">
+                  {SORT_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+              {/* Filter chips */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {TYPE_FILTERS.map(f => (
+                  <button key={f} onClick={() => setExploreFilter(f)}
+                    className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${
+                      exploreFilter === f ? "bg-black text-white border-black" : "bg-white text-[var(--text-muted)] border-black/[0.08] hover:border-black/[0.15]"
+                    }`}>{f}</button>
+                ))}
+              </div>
+              {applyError && <div className="bg-red-50 border border-red-200 text-red-700 text-[13px] rounded-xl px-4 py-3 mb-4">{applyError}</div>}
+              {exploreLoading ? (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1,2,3,4,5,6].map(i => (
+                    <div key={i} className="rounded-xl border border-black/[0.06] p-5 animate-pulse">
+                      <div className="h-4 bg-black/[0.04] rounded w-2/3 mb-2" /><div className="h-3 bg-black/[0.03] rounded w-1/3 mb-6" /><div className="h-3 bg-black/[0.03] rounded w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-[var(--text-muted)] text-[15px]">{exploreSearch || exploreFilter !== "All" ? "No jobs match your filters." : "No active test jobs right now."}</p>
+                  <p className="text-[13px] text-[var(--text-dim)] mt-1">Check back soon.</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filtered.map(job => {
+                    const pay = (job.price_per_tester_cents || 0) / 100;
+                    const spots = job.testers_count - job.accepted_count;
+                    const hostname = dom(job.app_url);
+                    const hasApplied = appliedSet.has(job.id);
+                    return (
+                      <div key={job.id} className="rounded-xl border border-black/[0.06] p-5 hover:border-black/[0.12] hover:shadow-sm transition-all">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div>
+                            <h3 className="h text-[14px] font-semibold text-[var(--text)] line-clamp-1">{hostname}</h3>
+                            {job.app_type && <span className="text-[11px] text-[var(--text-dim)]">{job.app_type}</span>}
+                          </div>
+                          <p className="h text-[16px] font-bold text-[var(--text)] shrink-0">${pay.toFixed(0)}</p>
+                        </div>
+                        {job.description && <p className="text-[12px] text-[var(--text-dim)] line-clamp-2 mb-3">{job.description}</p>}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1">
+                            <div className="flex -space-x-1.5">
+                              {Array.from({ length: Math.min(job.applications_count, 3) }).map((_, i) => (
+                                <div key={i} className="w-5 h-5 rounded-full border-2 border-white text-[8px] font-bold text-white flex items-center justify-center"
+                                  style={{ backgroundColor: avatarColor(`${job.id}-${i}`) }} />
+                              ))}
+                            </div>
+                            <span className="text-[11px] text-[var(--text-dim)] ml-1">{job.applications_count} applied</span>
+                          </div>
+                          <span className="text-[11px] text-[var(--text-dim)]">{spots > 0 ? `${spots} spots` : "Full"}</span>
+                        </div>
+                        {hasApplied ? (
+                          <button disabled className="w-full py-2 rounded-lg border border-black/[0.06] text-[12px] font-medium text-[var(--text-dim)]">Applied</button>
+                        ) : spots <= 0 ? (
+                          <button disabled className="w-full py-2 rounded-lg border border-black/[0.06] text-[12px] font-medium text-[var(--text-dim)]">Full</button>
+                        ) : (
+                          <button onClick={() => applyToJob(job.id)} disabled={applying === job.id}
+                            className="w-full py-2 rounded-lg bg-black text-white text-[12px] font-semibold hover:bg-black/90 transition-colors disabled:opacity-50">
+                            {applying === job.id ? "Applying..." : "Apply"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {tab === "myjobs" && (
           <div>
