@@ -1,178 +1,94 @@
-import Link from "next/link";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import Link from "next/link";
 
-const PLANS = [
-  {
-    name: "Quick Check",
-    testers: 3,
-    price: 29,
-    turnaround: "4 hours",
-    features: [
-      "3 audience-matched testers",
-      "Screen recordings (Loom)",
-      "Bug report per tester",
-      "Severity ratings",
-      "4-hour turnaround",
-    ],
-  },
-  {
-    name: "Full Test",
-    testers: 5,
-    price: 49,
-    turnaround: "4 hours",
-    popular: true,
-    features: [
-      "5 audience-matched testers",
-      "Screen recordings with audio",
-      "Detailed bug reports",
-      "UX friction notes",
-      "Priority ranking",
-      "4-hour turnaround",
-      "Priority queue",
-    ],
-  },
-  {
-    name: "Deep Dive",
-    testers: 10,
-    price: 89,
-    turnaround: "6 hours",
-    features: [
-      "10 audience-matched testers",
-      "Screen recordings with audio",
-      "Detailed bug reports",
-      "UX friction + improvement notes",
-      "Cross-device testing",
-      "Summary report with priorities",
-      "Tester demographic breakdown",
-      "6-hour turnaround",
-    ],
-  },
-];
-
-const COMPARE = [
-  { feature: "Real human testers", us: true, usertesting: true, betatesting: true },
-  { feature: "Audience matching", us: true, usertesting: true, betatesting: false },
-  { feature: "4-hour delivery", us: true, usertesting: false, betatesting: false },
-  { feature: "No subscription", us: true, usertesting: false, betatesting: false },
-  { feature: "From $29", us: true, usertesting: false, betatesting: false },
-  { feature: "Built for indie devs", us: true, usertesting: false, betatesting: false },
-  { feature: "Screen recordings", us: true, usertesting: true, betatesting: true },
-  { feature: "Bug reports", us: true, usertesting: false, betatesting: true },
-];
-
-export default function PricingPage() {
+export default function Pricing() {
   return (
     <>
       <Nav />
-      <main className="pt-16 min-h-screen">
-        <div className="max-w-5xl mx-auto px-5 py-16 md:py-24">
+      <main className="pt-20 min-h-screen">
+        <div className="max-w-[900px] mx-auto px-5 py-16 md:py-24">
           <div className="text-center mb-14">
-            <p className="text-[11px] font-semibold text-[var(--accent)] tracking-[0.25em] uppercase mb-3">Pricing</p>
-            <h1 className="text-3xl md:text-[3rem] font-bold tracking-tight mb-3">
-              Pay per test. Cancel never.
-            </h1>
-            <p className="text-[16px] text-[var(--text-muted)] max-w-md mx-auto">
-              No subscriptions, no minimums. Buy a test when you need one. Results in hours.
-            </p>
+            <h1 className="h text-3xl md:text-4xl font-bold text-[var(--text)] mb-3">Simple pricing</h1>
+            <p className="text-[16px] text-[var(--text-muted)] max-w-md mx-auto">No subscriptions. No hidden fees. Pay per tester, set your own budget.</p>
           </div>
 
-          {/* Plans */}
-          <div className="grid md:grid-cols-3 gap-5 mb-20">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={`card p-6 flex flex-col ${plan.popular ? "!border-[var(--accent)]/30 glow" : ""}`}
-              >
-                {plan.popular && (
-                  <span className="inline-block w-fit bg-[var(--accent)] text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-4">Most popular</span>
+          {/* How pricing works */}
+          <div className="bg-white rounded-2xl border border-black/[0.06] p-8 md:p-10 mb-8">
+            <h2 className="h text-[18px] font-bold text-[var(--text)] mb-6">How it works</h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center mb-3">
+                  <span className="h text-[16px] font-bold text-[var(--accent)]">1</span>
+                </div>
+                <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-1">Choose testers</h3>
+                <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">Pick how many testers you want. From 1 to 100.</p>
+              </div>
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center mb-3">
+                  <span className="h text-[16px] font-bold text-[var(--accent)]">2</span>
+                </div>
+                <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-1">Set your price</h3>
+                <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">Pay $5+ per tester. Higher pay attracts faster, more experienced testers.</p>
+              </div>
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center mb-3">
+                  <span className="h text-[16px] font-bold text-[var(--accent)]">3</span>
+                </div>
+                <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-1">Get results</h3>
+                <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">Real humans test your app. You get honest feedback on what breaks.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Suggested budgets */}
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            {[
+              { tier: "Economy", price: 8, desc: "Good for quick checks", testers: "1-3 testers", speed: "24-48h", quality: "Mixed experience" },
+              { tier: "Standard", price: 12, desc: "Best value for most tests", testers: "3-10 testers", speed: "12-24h", quality: "Experienced testers", popular: true },
+              { tier: "Priority", price: 20, desc: "Fast, thorough coverage", testers: "5-20 testers", speed: "Under 12h", quality: "Top-rated testers" },
+            ].map(t => (
+              <div key={t.tier} className={`rounded-2xl border p-6 relative ${t.popular ? "border-[var(--accent)] bg-orange-50/30" : "border-black/[0.06] bg-white"}`}>
+                {t.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[var(--accent)] text-white text-[10px] font-semibold uppercase tracking-wider">Most popular</div>
                 )}
-                <h3 className="text-[18px] font-semibold mb-1">{plan.name}</h3>
-                <p className="text-[13px] text-[var(--text-muted)] mb-4">
-                  {plan.testers} testers / {plan.turnaround}
-                </p>
-                <p className="mb-6">
-                  <span className="text-4xl font-bold">${plan.price}</span>
-                  <span className="text-[13px] text-[var(--text-dim)] ml-1">per test</span>
-                </p>
-                <ul className="space-y-2.5 mb-6 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-[13px] text-[var(--text-muted)]">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6C5CE7" strokeWidth="2" className="mt-0.5 shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
+                <p className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider font-medium mb-1">{t.tier}</p>
+                <p className="h text-3xl font-bold text-[var(--text)] mb-1">${t.price}<span className="text-[14px] text-[var(--text-muted)] font-normal"> / tester</span></p>
+                <p className="text-[13px] text-[var(--text-muted)] mb-5">{t.desc}</p>
+                <div className="space-y-2 text-[12px]">
+                  {[t.testers, t.speed, t.quality].map(f => (
+                    <div key={f} className="flex items-center gap-2 text-[var(--text-muted)]">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                       {f}
-                    </li>
+                    </div>
                   ))}
-                </ul>
-                <Link
-                  href="/submit"
-                  className={`btn w-full text-[13px] ${plan.popular ? "btn-primary" : "btn-secondary"}`}
-                >
-                  Get {plan.testers} testers
-                </Link>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Comparison */}
-          <div className="mb-20">
-            <h2 className="text-xl font-bold text-center mb-8">How we compare</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-[var(--border)]">
-                    <th className="text-left py-3 pr-4 text-[var(--text-muted)] font-medium">Feature</th>
-                    <th className="text-center py-3 px-4 text-[var(--accent)] font-semibold">Flinchify</th>
-                    <th className="text-center py-3 px-4 text-[var(--text-muted)] font-medium">UserTesting</th>
-                    <th className="text-center py-3 px-4 text-[var(--text-muted)] font-medium">BetaTesting</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARE.map((row) => (
-                    <tr key={row.feature} className="border-b border-[var(--border)]">
-                      <td className="py-3 pr-4 text-[var(--text-muted)]">{row.feature}</td>
-                      <td className="py-3 px-4 text-center">
-                        {row.us ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" className="mx-auto"><polyline points="20 6 9 17 4 12" /></svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" className="mx-auto"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {row.usertesting ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" className="mx-auto"><polyline points="20 6 9 17 4 12" /></svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" className="mx-auto"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {row.betatesting ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" className="mx-auto"><polyline points="20 6 9 17 4 12" /></svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" className="mx-auto"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td className="py-3 pr-4 text-[var(--text-muted)] font-medium">Starting price</td>
-                    <td className="py-3 px-4 text-center font-semibold text-white">$29</td>
-                    <td className="py-3 px-4 text-center text-[var(--text-muted)]">$30K/yr</td>
-                    <td className="py-3 px-4 text-center text-[var(--text-muted)]">$99/test</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <div className="text-center">
+            <p className="text-[13px] text-[var(--text-dim)] mb-4">These are suggestions. You set whatever price you want ($5 minimum).</p>
+            <Link href="/submit" className="btn btn-accent text-[14px] !px-8 !py-3">Post a test</Link>
           </div>
 
-          {/* Custom */}
-          <div className="card p-8 text-center glow-sm">
-            <h3 className="text-xl font-bold mb-2">Need something custom?</h3>
-            <p className="text-[14px] text-[var(--text-muted)] mb-4 max-w-md mx-auto">
-              Recurring testing, larger panels, specific demographics, or enterprise requirements.
-            </p>
-            <Link href="/contact" className="btn btn-secondary">
-              Get in touch
-            </Link>
+          {/* FAQ */}
+          <div className="mt-16">
+            <h2 className="h text-[18px] font-bold text-[var(--text)] mb-6 text-center">Common questions</h2>
+            <div className="space-y-4">
+              {[
+                { q: "What do I get for my money?", a: "Real humans testing your app and reporting what confused them, what broke, and what they loved. You get written feedback with screenshots and screen recordings." },
+                { q: "How do testers get paid?", a: "Testers connect their bank account via Stripe. When you mark a test as complete, they get paid automatically. We handle everything." },
+                { q: "What if a tester does a bad job?", a: "You can reject low-quality submissions. You only pay for work you accept. Bad testers get removed from the platform." },
+                { q: "Is there a subscription?", a: "No. Pay per test, when you need it. No monthly fees, no commitments." },
+                { q: "Can I get a refund?", a: "If no testers accept your job within 7 days, you get a full refund. Otherwise, contact us and we'll sort it out." },
+              ].map(f => (
+                <div key={f.q} className="bg-white rounded-xl border border-black/[0.06] p-5">
+                  <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-1">{f.q}</h3>
+                  <p className="text-[13px] text-[var(--text-muted)] leading-relaxed">{f.a}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </main>
@@ -180,4 +96,3 @@ export default function PricingPage() {
     </>
   );
 }
-
