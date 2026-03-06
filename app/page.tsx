@@ -265,23 +265,25 @@ export default function Home() {
         <section className="py-8 sm:py-12 overflow-hidden border-b border-black/[0.04]">
           <p className="h text-[9px] sm:text-[10px] font-medium text-[var(--text-dim)] text-center uppercase tracking-[0.25em] mb-4 sm:mb-5">Built for makers who ship with</p>
           <div className="flex items-center marquee whitespace-nowrap">
-            {[...Array(2)].flatMap((_, setIdx) => [
-              { name: "Cursor", icon: <svg key={`cursor-${setIdx}`} width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="1.5"/><path d="M8 8l8 4-8 4V8z" fill="currentColor"/></svg> },
-              { name: "Bolt", icon: <svg key={`bolt-${setIdx}`} width="18" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> },
-              { name: "Replit", icon: <svg key={`replit-${setIdx}`} width="18" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3h6a6 6 0 010 12H6V3z" stroke="currentColor" strokeWidth="1.5"/><path d="M6 9h6a6 6 0 010 12H6V9z" stroke="currentColor" strokeWidth="1.5"/></svg> },
-              { name: "Lovable", icon: <svg key={`lovable-${setIdx}`} width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> },
-              { name: "v0", icon: <svg key={`v0-${setIdx}`} width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 5l6 14L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="19" cy="17" r="3" stroke="currentColor" strokeWidth="1.5"/></svg> },
-              { name: "Windsurf", icon: <svg key={`windsurf-${setIdx}`} width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 20C6 12 12 6 22 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M2 16C6 10 10 6 18 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M2 12C5 8 8 5 14 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
-              { name: "Claude", icon: <svg key={`claude-${setIdx}`} width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="white"/></svg> },
-              { name: "ChatGPT", icon: <svg key={`chatgpt-${setIdx}`} width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z" stroke="currentColor" strokeWidth="1.5"/><path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> },
-              { name: "Vercel", icon: <svg key={`vercel-${setIdx}`} width="20" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2z"/></svg> },
-              { name: "Supabase", icon: <svg key={`supa-${setIdx}`} width="18" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22.1c-.5.7-1.5.2-1.5-.6V13h8.7c.8 0 1.2 1 .7 1.6L13.5 22z"/><path d="M10.5 1.9c.5-.7 1.5-.2 1.5.6V11H3.3c-.8 0-1.2-1-.7-1.6L10.5 2z" opacity=".7"/></svg> },
-            ].map((brand, i) => (
-              <div key={`${brand.name}-${setIdx}-${i}`} className="mx-5 sm:mx-8 flex items-center gap-2 text-black/20 hover:text-black/40 transition-colors">
-                {brand.icon}
-                <span className="h text-[12px] sm:text-[13px] font-semibold tracking-[0.05em]">{brand.name}</span>
-              </div>
-            )))}
+            {[...Array(2)].flatMap((_, setIdx) =>
+              [
+                { name: "Cursor", file: "cursor" },
+                { name: "Bolt", file: "bolt" },
+                { name: "Replit", file: "replit" },
+                { name: "Lovable", file: "lovable" },
+                { name: "v0", file: "v0" },
+                { name: "Windsurf", file: "windsurf" },
+                { name: "Claude", file: "claude" },
+                { name: "ChatGPT", file: "chatgpt" },
+                { name: "Vercel", file: "vercel" },
+                { name: "Supabase", file: "supabase" },
+              ].map((brand, i) => (
+                <div key={`${brand.name}-${setIdx}-${i}`} className="mx-5 sm:mx-8 flex items-center gap-2.5 shrink-0">
+                  <img src={`/brands/${brand.file}.svg`} alt={brand.name} className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span className="h text-[12px] sm:text-[13px] font-semibold text-[var(--text-2)] tracking-[0.02em]">{brand.name}</span>
+                </div>
+              ))
+            )}
           </div>
         </section>
 
