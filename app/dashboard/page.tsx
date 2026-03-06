@@ -62,11 +62,11 @@ export default function Dashboard() {
     fetch("/api/testers/me")
       .then(r => r.json())
       .then(d => {
-        if (!d.authenticated) { router.push("/become-a-tester"); return; }
+        if (!d.authenticated) { router.push("/"); return; }
         setTester(d.tester);
         setLoading(false);
       })
-      .catch(() => router.push("/become-a-tester"));
+      .catch(() => router.push("/"));
 
     // Check Stripe Connect status
     fetch("/api/connect/status").then(r => r.json()).then(d => setConnectStatus(d)).catch(() => {});

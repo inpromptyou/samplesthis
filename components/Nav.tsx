@@ -155,20 +155,14 @@ export default function Nav() {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
-              <Link href={user.type === "tester" ? "/dashboard" : "/submit"}
-                className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors font-medium">
-                {user.type === "tester" ? "Dashboard" : "My jobs"}
-              </Link>
-              <span className="text-[12px] text-[var(--text-dim)] max-w-[120px] truncate">{user.name || user.email}</span>
+              <Link href="/dashboard" className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors font-medium">Dashboard</Link>
+              <Link href="/submit" className="btn btn-accent text-[13px] !py-2 !px-5">Post a test</Link>
               <button onClick={signOut} className="text-[12px] text-[var(--text-dim)] hover:text-red-500 transition-colors font-medium">
                 Sign out
               </button>
             </>
           ) : (
-            <>
-              <Link href="/dashboard" className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors font-medium">Dashboard</Link>
-              <Link href="/submit" className="btn btn-accent text-[13px] !py-2 !px-5">Post a test</Link>
-            </>
+            <Link href="/become-a-tester" className="btn btn-accent text-[13px] !py-2 !px-5">Sign up</Link>
           )}
         </div>
 
@@ -203,14 +197,12 @@ export default function Nav() {
             <div className="pt-4 space-y-2">
               {user ? (
                 <>
-                  <div className="text-[12px] text-[var(--text-dim)] mb-2">
-                    Signed in as <span className="font-medium text-[var(--text)]">{user.name || user.email}</span>
-                  </div>
+                  <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-accent w-full">Dashboard</Link>
                   <button onClick={() => { signOut(); setOpen(false); }}
                     className="btn btn-outline w-full !text-red-500 !border-red-200 hover:!bg-red-50">Sign out</button>
                 </>
               ) : (
-                <Link href="/submit" onClick={() => setOpen(false)} className="btn btn-accent w-full">Post a test</Link>
+                <Link href="/become-a-tester" onClick={() => setOpen(false)} className="btn btn-accent w-full">Sign up</Link>
               )}
             </div>
           </div>

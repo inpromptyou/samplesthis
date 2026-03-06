@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Nav from "@/components/Nav";
@@ -18,6 +18,17 @@ const SAMPLE_JOBS = [
 export default function Home() {
   const router = useRouter();
   const [authMode, setAuthMode] = useState<"tester" | "business" | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in (either tester or business)
+    Promise.all([
+      fetch("/api/testers/me").then(r => r.json()).catch(() => ({})),
+      fetch("/api/business/me").then(r => r.json()).catch(() => ({})),
+    ]).then(([tester, biz]) => {
+      if (tester?.id || biz?.authenticated) setLoggedIn(true);
+    });
+  }, []);
 
   const handleAuthSuccess = (data: { type: "tester" | "business" }) => {
     setAuthMode(null);
@@ -63,8 +74,17 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 hero-anim ha-4">
-              <button onClick={() => setAuthMode("tester")} className="btn btn-primary btn-lg w-full sm:w-auto">Start testing</button>
-              <button onClick={() => setAuthMode("business")} className="btn btn-outline btn-lg w-full sm:w-auto">Post a job</button>
+              {loggedIn ? (
+                <>
+                  <Link href="/explore" className="btn btn-primary btn-lg w-full sm:w-auto">Start testing</Link>
+                  <Link href="/submit" className="btn btn-outline btn-lg w-full sm:w-auto">Post a job</Link>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setAuthMode("tester")} className="btn btn-primary btn-lg w-full sm:w-auto">Become a tester</button>
+                  <button onClick={() => setAuthMode("business")} className="btn btn-outline btn-lg w-full sm:w-auto">List a job</button>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -315,8 +335,17 @@ export default function Home() {
               Real humans. Your audience. Every friction point.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button onClick={() => setAuthMode("tester")} className="btn btn-primary btn-lg w-full sm:w-auto">Start testing</button>
-              <button onClick={() => setAuthMode("business")} className="btn btn-outline btn-lg w-full sm:w-auto">Post a job</button>
+              {loggedIn ? (
+                <>
+                  <Link href="/explore" className="btn btn-primary btn-lg w-full sm:w-auto">Start testing</Link>
+                  <Link href="/submit" className="btn btn-outline btn-lg w-full sm:w-auto">Post a job</Link>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setAuthMode("tester")} className="btn btn-primary btn-lg w-full sm:w-auto">Become a tester</button>
+                  <button onClick={() => setAuthMode("business")} className="btn btn-outline btn-lg w-full sm:w-auto">List a job</button>
+                </>
+              )}
             </div>
           </ScrollReveal>
         </section>
