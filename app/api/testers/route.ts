@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     await ensureTables();
     const body = await req.json();
-    const { name, email, age_range, location, devices, interests, tech_comfort, bio, ref } = body;
+    const { name, email, age_range, location, devices, interests, tech_comfort, bio, ref, linkedin, portfolio, twitter, github, other_links } = body;
 
     if (!name || !email) {
       return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
@@ -41,11 +41,13 @@ export async function POST(req: NextRequest) {
 
     const token = generateToken();
     const rows = await sql`
-      INSERT INTO testers (name, email, age_range, location, devices, interests, tech_comfort, bio, auth_token, referred_by)
+      INSERT INTO testers (name, email, age_range, location, devices, interests, tech_comfort, bio, auth_token, referred_by, linkedin, portfolio, twitter, github, other_links)
       VALUES (
         ${name}, ${email.toLowerCase()}, ${age_range || null}, ${location || null},
         ${JSON.stringify(devices || [])}, ${JSON.stringify(interests || [])},
-        ${tech_comfort || 3}, ${bio || null}, ${token}, ${referredBy}
+        ${tech_comfort || 3}, ${bio || null}, ${token}, ${referredBy},
+        ${linkedin || null}, ${portfolio || null}, ${twitter || null}, ${github || null},
+        ${JSON.stringify(other_links || [])}
       )
       RETURNING id
     `;

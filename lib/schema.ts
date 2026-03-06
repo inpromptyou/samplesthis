@@ -61,6 +61,11 @@ export async function ensureTables() {
     await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS stripe_onboarded BOOLEAN DEFAULT false`;
     await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS referral_code VARCHAR(50) UNIQUE`;
     await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS referred_by INTEGER REFERENCES testers(id)`;
+    await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS linkedin VARCHAR(500)`;
+    await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS portfolio VARCHAR(500)`;
+    await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS twitter VARCHAR(100)`;
+    await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS github VARCHAR(100)`;
+    await sql`ALTER TABLE testers ADD COLUMN IF NOT EXISTS other_links TEXT DEFAULT '[]'`;
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS payout_cents INTEGER DEFAULT 0`;
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS payout_transfer_id VARCHAR(255)`;
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP`;
