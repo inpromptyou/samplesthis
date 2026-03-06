@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
           method: "POST",
           headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            from: "Flinchify <noreply@flinchify.com>",
+            from: "Flinchify <onboarding@resend.dev>",
             to: emailLower,
             subject: `Your Flinchify verification code: ${verifyCode}`,
             html: `
