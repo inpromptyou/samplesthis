@@ -36,6 +36,7 @@ interface Job {
 
 const NAV_ITEMS = [
   { key: "overview", label: "Overview", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  { key: "explore", label: "Explore", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z", href: "/explore" },
   { key: "jobs", label: "Browse Jobs", icon: "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
   { key: "payouts", label: "Payouts", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { key: "profile", label: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
@@ -117,13 +118,21 @@ export default function Dashboard() {
 
         <nav className="space-y-1 flex-1">
           {NAV_ITEMS.map(item => (
-            <button key={item.key} onClick={() => setTab(item.key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors ${
-                tab === item.key ? "bg-black/[0.04] text-[var(--text)]" : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-black/[0.02]"
-              }`}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon} /></svg>
-              {item.label}
-            </button>
+            "href" in item && item.href ? (
+              <Link key={item.key} href={item.href}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-black/[0.02] transition-colors">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon} /></svg>
+                {item.label}
+              </Link>
+            ) : (
+              <button key={item.key} onClick={() => setTab(item.key)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors ${
+                  tab === item.key ? "bg-black/[0.04] text-[var(--text)]" : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-black/[0.02]"
+                }`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon} /></svg>
+                {item.label}
+              </button>
+            )
           ))}
         </nav>
 
@@ -138,10 +147,16 @@ export default function Dashboard() {
         </Link>
         <div className="flex gap-1">
           {NAV_ITEMS.map(item => (
-            <button key={item.key} onClick={() => setTab(item.key)}
-              className={`p-2 rounded-lg ${tab === item.key ? "bg-black/[0.04]" : ""}`}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={tab === item.key ? "#111" : "#999"} strokeWidth="1.5"><path d={item.icon} /></svg>
-            </button>
+            "href" in item && item.href ? (
+              <Link key={item.key} href={item.href} className="p-2 rounded-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.5"><path d={item.icon} /></svg>
+              </Link>
+            ) : (
+              <button key={item.key} onClick={() => setTab(item.key)}
+                className={`p-2 rounded-lg ${tab === item.key ? "bg-black/[0.04]" : ""}`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={tab === item.key ? "#111" : "#999"} strokeWidth="1.5"><path d={item.icon} /></svg>
+              </button>
+            )
           ))}
         </div>
       </div>
