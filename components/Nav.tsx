@@ -34,7 +34,7 @@ export default function Nav() {
 
         {/* Desktop links — hidden below md (768px) */}
         <div className="hidden md:flex items-center gap-8">
-          <Link href="/jobs" className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Browse jobs</Link>
+          <Link href="/explore" className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Explore</Link>
           <Link href="/how-it-works" className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">How it works</Link>
           <Link href="/become-a-tester" className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Become a tester</Link>
         </div>
@@ -57,9 +57,10 @@ export default function Nav() {
         <div className="md:hidden bg-white border-t border-black/[0.04] animate-in">
           <div className="px-5 py-5 space-y-1">
             {[
-              { href: "/jobs", label: "Browse jobs" },
+              { href: "/explore", label: "Explore" },
               { href: "/how-it-works", label: "How it works" },
               { href: "/become-a-tester", label: "Become a tester" },
+              { href: "/referrals", label: "Referrals" },
               { href: "/dashboard", label: "Dashboard" },
             ].map(link => (
               <Link key={link.href} href={link.href} onClick={() => setOpen(false)}

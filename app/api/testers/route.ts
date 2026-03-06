@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     await ensureTables();
     const body = await req.json();
-    const { name, email, age_range, location, devices, interests, tech_comfort, bio } = body;
+    const { name, email, age_range, location, devices, interests, tech_comfort, bio, ref } = body;
 
     if (!name || !email) {
       return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
@@ -32,13 +32,20 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
+    // Resolve referral
+    let referredBy: number | null = null;
+    if (ref) {
+      const [referrer] = await sql`SELECT id FROM testers WHERE referral_code = ${ref}`;
+      if (referrer) referredBy = referrer.id;
+    }
+
     const token = generateToken();
     const rows = await sql`
-      INSERT INTO testers (name, email, age_range, location, devices, interests, tech_comfort, bio, auth_token)
+      INSERT INTO testers (name, email, age_range, location, devices, interests, tech_comfort, bio, auth_token, referred_by)
       VALUES (
         ${name}, ${email.toLowerCase()}, ${age_range || null}, ${location || null},
         ${JSON.stringify(devices || [])}, ${JSON.stringify(interests || [])},
-        ${tech_comfort || 3}, ${bio || null}, ${token}
+        ${tech_comfort || 3}, ${bio || null}, ${token}, ${referredBy}
       )
       RETURNING id
     `;

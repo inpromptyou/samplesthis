@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -15,8 +15,14 @@ const INTERESTS = [
   "Cars/Auto", "Fashion", "Sports", "Tech/Gadgets", "Art/Design",
 ];
 
-export default function BecomeATester() {
+export default function BecomeATesterWrapper() {
+  return <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[var(--text-dim)]">Loading...</div>}><BecomeATester /></Suspense>;
+}
+
+function BecomeATester() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const ref = searchParams.get("ref") || "";
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -41,7 +47,7 @@ export default function BecomeATester() {
       const res = await fetch("/api/testers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, ref }),
       });
       const data = await res.json();
       if (!res.ok && !data.existing) throw new Error(data.error);
