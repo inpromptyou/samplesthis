@@ -161,14 +161,22 @@ export default function Nav() {
               <Link href="/submit" className="btn btn-accent text-[13px] !py-2 !px-5">Post a test</Link>
             </>
           ) : (
-            <button onClick={() => {
-              // If on homepage, open modal directly. Otherwise navigate.
-              if (window.location.pathname === "/") {
-                window.dispatchEvent(new CustomEvent("open-auth", { detail: "tester" }));
-              } else {
-                window.location.href = "/?auth=tester";
-              }
-            }} className="btn btn-accent text-[13px] !py-2 !px-5">Sign up</button>
+            <>
+              <button onClick={() => {
+                if (window.location.pathname === "/") {
+                  window.dispatchEvent(new CustomEvent("open-auth", { detail: "tester" }));
+                } else {
+                  window.location.href = "/?auth=tester";
+                }
+              }} className="text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Log in</button>
+              <button onClick={() => {
+                if (window.location.pathname === "/") {
+                  window.dispatchEvent(new CustomEvent("open-auth", { detail: "tester" }));
+                } else {
+                  window.location.href = "/?auth=tester";
+                }
+              }} className="btn btn-accent text-[13px] !py-2 !px-5">Sign up</button>
+            </>
           )}
         </div>
 
