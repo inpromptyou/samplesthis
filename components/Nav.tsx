@@ -159,12 +159,16 @@ export default function Nav() {
             <>
               <Link href="/dashboard" className="text-[13px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors font-medium">Dashboard</Link>
               <Link href="/submit" className="btn btn-accent text-[13px] !py-2 !px-5">Post a test</Link>
-              <button onClick={signOut} className="text-[12px] text-[var(--text-dim)] hover:text-red-500 transition-colors font-medium">
-                Sign out
-              </button>
             </>
           ) : (
-            <Link href="/?auth=tester" className="btn btn-accent text-[13px] !py-2 !px-5">Sign up</Link>
+            <button onClick={() => {
+              // If on homepage, open modal directly. Otherwise navigate.
+              if (window.location.pathname === "/") {
+                window.dispatchEvent(new CustomEvent("open-auth", { detail: "tester" }));
+              } else {
+                window.location.href = "/?auth=tester";
+              }
+            }} className="btn btn-accent text-[13px] !py-2 !px-5">Sign up</button>
           )}
         </div>
 
@@ -198,13 +202,16 @@ export default function Nav() {
             ))}
             <div className="pt-4 space-y-2">
               {user ? (
-                <>
-                  <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-accent w-full">Dashboard</Link>
-                  <button onClick={() => { signOut(); setOpen(false); }}
-                    className="btn btn-outline w-full !text-red-500 !border-red-200 hover:!bg-red-50">Sign out</button>
-                </>
+                <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-accent w-full">Dashboard</Link>
               ) : (
-                <Link href="/?auth=tester" onClick={() => setOpen(false)} className="btn btn-accent w-full">Sign up</Link>
+                <button onClick={() => {
+                  setOpen(false);
+                  if (window.location.pathname === "/") {
+                    window.dispatchEvent(new CustomEvent("open-auth", { detail: "tester" }));
+                  } else {
+                    window.location.href = "/?auth=tester";
+                  }
+                }} className="btn btn-accent w-full">Sign up</button>
               )}
             </div>
           </div>

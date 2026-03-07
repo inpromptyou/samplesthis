@@ -43,6 +43,16 @@ function Home() {
     });
   }, []);
 
+  // Listen for auth modal events from Nav
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as "tester" | "business";
+      setAuthMode(detail || "tester");
+    };
+    window.addEventListener("open-auth", handler);
+    return () => window.removeEventListener("open-auth", handler);
+  }, []);
+
   const handleAuthSuccess = (data: { type: "tester" | "business" }) => {
     setAuthMode(null);
     if (data.type === "tester") router.push("/dashboard");
