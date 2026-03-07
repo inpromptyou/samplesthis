@@ -30,7 +30,7 @@ function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const authParam = searchParams.get("auth") as "tester" | "business" | null;
-  const [authMode, setAuthMode] = useState<"tester" | "business" | null>(authParam);
+  const [authMode, setAuthMode] = useState<"tester" | "business" | "login" | null>(authParam);
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ function Home() {
     return () => window.removeEventListener("open-auth", handler);
   }, []);
 
-  const handleAuthSuccess = (data: { type: "tester" | "business" }) => {
+  const handleAuthSuccess = (data: { type: "tester" | "business" | "login" }) => {
     setAuthMode(null);
     if (data.type === "tester") router.push("/dashboard");
     else router.push("/submit");

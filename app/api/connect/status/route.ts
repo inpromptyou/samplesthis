@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
-import { ensureTables } from "@/lib/schema";
 import Stripe from "stripe";
 
 export async function GET(req: NextRequest) {
   const sk = process.env.STRIPE_SECRET_KEY;
   if (!sk) return NextResponse.json({ onboarded: false, hasAccount: false });
 
-  await ensureTables();
   const sql = getSql();
   const stripe = new Stripe(sk);
 

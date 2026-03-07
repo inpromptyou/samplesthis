@@ -164,9 +164,9 @@ export default function Nav() {
             <>
               <button onClick={() => {
                 if (window.location.pathname === "/") {
-                  window.dispatchEvent(new CustomEvent("open-auth", { detail: "tester" }));
+                  window.dispatchEvent(new CustomEvent("open-auth", { detail: "login" }));
                 } else {
-                  window.location.href = "/?auth=tester";
+                  window.location.href = "/?auth=login";
                 }
               }} className="text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">Log in</button>
               <button onClick={() => {

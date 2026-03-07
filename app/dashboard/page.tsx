@@ -173,9 +173,14 @@ function Dashboard() {
     try {
       const r = await fetch("/api/connect/onboard", { method: "POST" });
       const d = await r.json();
-      if (d.url) window.location.href = d.url;
-      else alert(d.error || "Failed to start setup");
-    } catch { alert("Something went wrong"); }
+      if (d.url) {
+        window.location.href = d.url;
+        return; // Don't reset loading — we're navigating away
+      }
+      alert(d.error || "Failed to start payout setup");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Something went wrong connecting to Stripe");
+    }
     setConnectLoading(false);
   };
 
