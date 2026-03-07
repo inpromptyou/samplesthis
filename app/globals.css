@@ -198,15 +198,68 @@ body { background: var(--bg); color: var(--text); letter-spacing: -0.01em; }
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 .marquee { animation: marquee 30s linear infinite; }
 
-/* warm section bg */
+/* warm section bg — seamless gradients, no hard lines */
 .warm-section { background: linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 100%); }
-.warm-gradient-hero { background: linear-gradient(180deg, #FFFBF7 0%, #FFF4EB 40%, #FFE8D6 100%); }
-.warm-gradient-down { background: linear-gradient(180deg, var(--bg) 0%, var(--bg-3) 100%); }
-.warm-gradient-up { background: linear-gradient(180deg, var(--bg-3) 0%, var(--bg) 100%); }
+.warm-gradient-hero {
+  background: linear-gradient(180deg, #FFFBF7 0%, #FFF4EB 30%, #FFE8D6 60%, #FFDDC4 80%, var(--bg) 100%);
+}
+.warm-gradient-down { background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 40%, var(--bg-3) 100%); }
+.warm-gradient-up { background: linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 40%, var(--bg) 100%); }
 
 /* ─── Mobile menu ─── */
 @keyframes slide-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .animate-in { animation: slide-down 0.2s ease forwards; }
+
+/* ─── Typing rotation ─── */
+.typing-rotate-wrapper {
+  display: inline-flex;
+  align-items: baseline;
+  position: relative;
+  min-width: 2ch;
+}
+.typing-word {
+  background: linear-gradient(135deg, #F97316, #EF4444, #F59E0B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.typing-cursor {
+  color: var(--accent);
+  font-weight: 300;
+  margin-left: 1px;
+  transition: opacity 0.1s;
+  -webkit-text-fill-color: var(--accent);
+}
+
+/* ─── Card hover lift ─── */
+.card-hover-lift {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.2s ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -12px rgba(0,0,0,0.12);
+}
+
+/* ─── Pulse glow on accent buttons ─── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.3); }
+  50% { box-shadow: 0 0 20px 4px rgba(249,115,22,0.15); }
+}
+.btn-primary { animation: pulse-glow 3s ease-in-out infinite; }
+.btn-primary:hover { animation: none; }
+
+/* ─── Counter / number tick ─── */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Smooth float for feature blocks ─── */
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.float-anim { animation: gentle-float 4s ease-in-out infinite; }
 
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 6px; }

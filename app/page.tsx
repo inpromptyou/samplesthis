@@ -7,12 +7,15 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 import AuthModal from "@/components/AuthModal";
+import TypingRotate from "@/components/TypingRotate";
 
 const SAMPLE_JOBS = [
   { app: "Fitness tracking app", audience: "Gym-goers, 25-40", testers: 5, budget: 12, time: "2h ago", applied: 8 },
   { app: "SaaS onboarding flow", audience: "Small business owners", testers: 3, budget: 15, time: "45m ago", applied: 5 },
   { app: "Crypto portfolio tracker", audience: "Active traders", testers: 8, budget: 8, time: "1h ago", applied: 12 },
   { app: "Recipe sharing mobile app", audience: "Home cooks, 30-55", testers: 5, budget: 10, time: "3h ago", applied: 9 },
+  { app: "E-commerce checkout redesign", audience: "Online shoppers, 20-45", testers: 4, budget: 18, time: "30m ago", applied: 6 },
+  { app: "AI writing assistant", audience: "Content creators", testers: 6, budget: 14, time: "1.5h ago", applied: 11 },
 ];
 
 export default function HomePage() {
@@ -75,7 +78,9 @@ function Home() {
             </div>
 
             <h1 className="h text-[2.2rem] sm:text-[clamp(2.8rem,7vw,5rem)] font-bold leading-[1.05] tracking-[-0.035em] mb-5 sm:mb-6 hero-anim ha-2">
-              Find the flinch before your users do
+              Find the flinch before your{" "}
+              <span className="grad-warm inline"><TypingRotate /></span>{" "}
+              do
             </h1>
 
             <p className="text-[15px] sm:text-[17px] text-[var(--text-muted)] max-w-[480px] mx-auto mb-8 sm:mb-10 leading-[1.6] hero-anim ha-3 px-2">
@@ -101,7 +106,7 @@ function Home() {
 
         {/* ═══ LIVE JOBS ═══ */}
         <section className="pb-16 sm:pb-24 px-5 sm:px-6">
-          <div className="max-w-[1000px] mx-auto">
+          <div className="max-w-[1100px] mx-auto">
             <div className="flex items-center justify-between mb-5 sm:mb-6">
               <h2 className="h text-[15px] font-semibold text-[var(--text)]">Latest jobs</h2>
               <Link href="/explore" className="text-[13px] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors flex items-center gap-1">
@@ -109,29 +114,31 @@ function Home() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
               </Link>
             </div>
-            {/* 1 col mobile, 2 col desktop */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {SAMPLE_JOBS.map((job) => (
-                <div key={job.app} className="card p-4 sm:p-5">
-                  <div className="flex items-start justify-between mb-3 sm:mb-4">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="h text-[14px] sm:text-[15px] font-semibold text-[var(--text)]">{job.app}</h3>
-                      <p className="text-[12px] sm:text-[13px] text-[var(--text-muted)] mt-0.5">${job.budget}/tester</p>
-                    </div>
-                    <span className="text-[11px] sm:text-[12px] text-[var(--text-dim)] shrink-0 ml-3">{job.time}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex -space-x-1.5">
-                        {Array.from({ length: Math.min(3, job.applied) }).map((_, i) => (
-                          <div key={i} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-orange-200 to-amber-100 border-2 border-white" />
-                        ))}
+            {/* 1 col mobile, 3 col desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {SAMPLE_JOBS.map((job, i) => (
+                <ScrollReveal key={job.app} delay={i * 80} animation="up">
+                  <div className="card card-hover-lift p-4 sm:p-5 h-full">
+                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="h text-[14px] sm:text-[15px] font-semibold text-[var(--text)]">{job.app}</h3>
+                        <p className="text-[12px] sm:text-[13px] text-[var(--text-muted)] mt-0.5">${job.budget}/tester</p>
                       </div>
-                      <span className="text-[11px] sm:text-[12px] text-[var(--text-dim)]">{job.applied} applied</span>
+                      <span className="text-[11px] sm:text-[12px] text-[var(--text-dim)] shrink-0 ml-3">{job.time}</span>
                     </div>
-                    <button onClick={() => setAuthMode("tester")} className="text-[12px] font-medium text-[var(--accent)] hover:underline">Apply</button>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex -space-x-1.5">
+                          {Array.from({ length: Math.min(3, job.applied) }).map((_, i) => (
+                            <div key={i} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-orange-200 to-amber-100 border-2 border-white" />
+                          ))}
+                        </div>
+                        <span className="text-[11px] sm:text-[12px] text-[var(--text-dim)]">{job.applied} applied</span>
+                      </div>
+                      <button onClick={() => setAuthMode("tester")} className="text-[12px] font-medium text-[var(--accent)] hover:underline">Apply</button>
+                    </div>
                   </div>
-                </div>
+                </ScrollReveal>
               ))}
             </div>
           </div>
@@ -139,7 +146,8 @@ function Home() {
 
         {/* ═══ FEATURE BLOCK ═══ */}
         <section className="px-5 sm:px-6 pb-16 sm:pb-24">
-          <div className="max-w-[1000px] mx-auto">
+          <div className="max-w-[1100px] mx-auto">
+            <ScrollReveal animation="in">
             <div className="feature-block px-6 py-12 sm:px-10 sm:py-16 md:px-16 md:py-20 text-center">
               <h2 className="h text-2xl sm:text-3xl md:text-[3.5rem] font-bold tracking-[-0.03em] leading-tight mb-4 sm:mb-5">
                 Flinch Report
@@ -151,12 +159,13 @@ function Home() {
                 Get your report
               </Link>
             </div>
+            </ScrollReveal>
           </div>
         </section>
 
         {/* ═══ TWO SIDES ═══ */}
         <section className="warm-gradient-down py-16 sm:py-20 px-5 sm:px-6">
-          <div className="max-w-[1000px] mx-auto">
+          <div className="max-w-[1100px] mx-auto">
             <ScrollReveal>
               <h2 className="h text-[1.5rem] sm:text-2xl md:text-[2.5rem] font-bold tracking-[-0.03em] text-center mb-8 sm:mb-14 text-[var(--text)]">
                 One platform. Two ways to win.
@@ -252,7 +261,7 @@ function Home() {
 
         {/* ═══ DELIVERABLES ═══ */}
         <section className="py-16 sm:py-20 px-5 sm:px-6">
-          <div className="max-w-[1000px] mx-auto">
+          <div className="max-w-[1100px] mx-auto">
             <ScrollReveal>
               <h2 className="h text-[1.5rem] sm:text-2xl md:text-[2.5rem] font-bold tracking-[-0.03em] text-center mb-8 sm:mb-12 text-[var(--text)]">
                 What you get
