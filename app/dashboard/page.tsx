@@ -93,8 +93,11 @@ interface ExploreJob {
   app_url: string;
   app_type: string | null;
   description: string | null;
+  target_audience: string | null;
   testers_count: number;
+  price_cents: number;
   price_per_tester_cents: number;
+  status: string;
   applications_count: number;
   accepted_count: number;
   created_at: string;
@@ -133,6 +136,9 @@ function Dashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingAction, setBookingAction] = useState<number | null>(null);
+  // My posted jobs
+  const [postedJobs, setPostedJobs] = useState<ExploreJob[]>([]);
+  const [postedLoading, setPostedLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/testers/me")
@@ -160,6 +166,10 @@ function Dashboard() {
     if (tab === "bookings") {
       setBookingsLoading(true);
       fetch("/api/bookings").then(r => r.json()).then(d => { setBookings(d.bookings || []); setBookingsLoading(false); }).catch(() => setBookingsLoading(false));
+    }
+    if (tab === "overview" || tab === "posttest") {
+      setPostedLoading(true);
+      fetch("/api/orders/mine").then(r => r.json()).then(d => { setPostedJobs(d.orders || []); setPostedLoading(false); }).catch(() => setPostedLoading(false));
     }
   }, [tab]);
 
@@ -362,6 +372,34 @@ function Dashboard() {
                 <p className="text-[13px] text-[var(--text-muted)]">Keep your info current to get matched to better jobs.</p>
               </button>
             </div>
+
+            {/* My Posted Jobs */}
+            {postedJobs.length > 0 && (
+              <div className="mt-8">
+                <h2 className="h text-[16px] font-semibold text-[var(--text)] mb-4">My posted jobs</h2>
+                <div className="space-y-3">
+                  {postedJobs.map(job => (
+                    <div key={job.id} className="bg-white rounded-2xl border border-black/[0.04] p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="h text-[14px] font-semibold text-[var(--text)]">{dom(job.app_url)}</p>
+                          <p className="text-[12px] text-[var(--text-dim)] mt-0.5">{job.app_type} · Posted {new Date(job.created_at).toLocaleDateString("en-AU")}</p>
+                          {job.description && <p className="text-[13px] text-[var(--text-muted)] mt-2 line-clamp-2">{job.description}</p>}
+                        </div>
+                        <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${
+                          job.status === "paid" ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"
+                        }`}>{job.status === "paid" ? "Live" : job.status}</span>
+                      </div>
+                      <div className="flex gap-4 mt-3 text-[12px] text-[var(--text-dim)]">
+                        <span>{job.applications_count || 0} application{(job.applications_count || 0) !== 1 ? "s" : ""}</span>
+                        <span>{job.accepted_count || 0} accepted</span>
+                        <span>${((job.price_per_tester_cents || 0) / 100).toFixed(0)}/tester · {job.testers_count} spots</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
