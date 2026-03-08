@@ -11,7 +11,7 @@ export async function GET() {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Flinchify <noreply@send.flinchify.com>",
+        from: "Flinchify <noreply@flinchify.com>",
         to: "inpromptyou@gmail.com",
         subject: "Flinchify Email Test",
         html: "<p>If you see this, email is working!</p>",

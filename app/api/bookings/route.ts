@@ -14,7 +14,7 @@ async function sendBookingEmail(to: string, subject: string, html: string) {
     method: "POST",
     headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Flinchify <noreply@send.flinchify.com>",
+      from: "Flinchify <noreply@flinchify.com>",
       to,
       subject,
       html,
