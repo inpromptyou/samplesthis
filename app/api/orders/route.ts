@@ -99,6 +99,19 @@ export async function POST(req: NextRequest) {
 
     await sql`UPDATE orders SET stripe_session_id = ${session.id} WHERE id = ${orderId}`;
 
+    // Create booking if scheduling data provided
+    if (body.booking && body.booking.scheduled_date && body.booking.scheduled_time) {
+      const bk = body.booking;
+      const scheduledDateTime = new Date(`${bk.scheduled_date}T${bk.scheduled_time}:00`);
+      const appReadyDeadline = new Date(scheduledDateTime.getTime() - 2 * 60 * 60 * 1000);
+      const dur = Math.max(15, Math.min(120, parseInt(bk.duration_minutes) || 30));
+      await sql`
+        INSERT INTO bookings (order_id, scheduled_date, scheduled_time, timezone, duration_minutes, app_ready_deadline)
+        VALUES (${orderId}, ${bk.scheduled_date}, ${bk.scheduled_time}, ${"Australia/Sydney"}, ${dur}, ${appReadyDeadline.toISOString()})
+      `;
+      await sql`UPDATE orders SET booking_required = true, booking_deadline = ${appReadyDeadline.toISOString()} WHERE id = ${orderId}`;
+    }
+
     return NextResponse.json({ success: true, orderId, checkoutUrl: session.url });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Order failed";

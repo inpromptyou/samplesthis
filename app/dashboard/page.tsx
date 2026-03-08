@@ -43,6 +43,7 @@ const NAV_ITEMS = [
   { key: "overview", label: "Overview", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
   { key: "explore", label: "Explore Jobs", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
   { key: "myjobs", label: "My Jobs", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
+  { key: "bookings", label: "Bookings", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
   { key: "posttest", label: "Post a Test", icon: "M12 4v16m8-8H4" },
   { key: "payouts", label: "Payouts", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { key: "referrals", label: "Referrals", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
@@ -63,6 +64,28 @@ function avatarColor(s: string) {
   let hash = 0;
   for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
+}
+
+interface Booking {
+  id: number;
+  order_id: number;
+  tester_id: number | null;
+  scheduled_date: string;
+  scheduled_time: string;
+  timezone: string;
+  duration_minutes: number;
+  status: string;
+  app_ready: boolean;
+  app_ready_deadline: string | null;
+  notes: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+  completed_at: string | null;
+  app_url: string;
+  app_type: string | null;
+  job_description: string | null;
+  tester_name?: string;
+  tester_email?: string;
 }
 
 interface ExploreJob {
@@ -106,6 +129,10 @@ function Dashboard() {
   const [applying, setApplying] = useState<number | null>(null);
   const [appliedSet, setAppliedSet] = useState<Set<number>>(new Set());
   const [applyError, setApplyError] = useState("");
+  // Bookings tab state
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingAction, setBookingAction] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/testers/me")
@@ -129,6 +156,10 @@ function Dashboard() {
     if (tab === "explore") {
       setExploreLoading(true);
       fetch("/api/orders").then(r => r.json()).then(d => { setExploreJobs(d.jobs || []); setExploreLoading(false); }).catch(() => setExploreLoading(false));
+    }
+    if (tab === "bookings") {
+      setBookingsLoading(true);
+      fetch("/api/bookings").then(r => r.json()).then(d => { setBookings(d.bookings || []); setBookingsLoading(false); }).catch(() => setBookingsLoading(false));
     }
   }, [tab]);
 
@@ -171,6 +202,25 @@ function Dashboard() {
       alert(e instanceof Error ? e.message : "Failed to submit");
     }
     setSubmitting(false);
+  };
+
+  const handleBookingAction = async (bookingId: number, action: string) => {
+    setBookingAction(bookingId);
+    try {
+      const r = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      // Refresh bookings
+      const res = await fetch("/api/bookings").then(r2 => r2.json());
+      setBookings(res.bookings || []);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Action failed");
+    }
+    setBookingAction(null);
   };
 
   const setupPayouts = async () => {
@@ -499,6 +549,109 @@ function Dashboard() {
 
                       {a.status === "pending" && (
                         <p className="text-[12px] text-[var(--text-dim)] mt-2">Waiting for review. You&apos;ll be notified when accepted.</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "bookings" && (
+          <div>
+            <h1 className="h text-xl font-bold text-[var(--text)] mb-6">Bookings</h1>
+            {bookingsLoading ? (
+              <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-black/[0.04] p-6 animate-pulse"><div className="h-4 bg-black/[0.03] rounded w-1/3" /></div>)}</div>
+            ) : bookings.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-black/[0.04] p-10 text-center">
+                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </div>
+                <p className="text-[var(--text-muted)]">No bookings yet.</p>
+                <p className="text-[13px] text-[var(--text-dim)] mt-1">Scheduled test sessions will appear here.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bookings.map(b => {
+                  const hostname = dom(b.app_url);
+                  const statusConfig: Record<string, { bg: string; text: string; border: string; label: string }> = {
+                    pending: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200", label: "Pending" },
+                    confirmed: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", label: "Confirmed" },
+                    completed: { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", label: "Completed" },
+                    cancelled: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", label: "Cancelled" },
+                    no_show: { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200", label: "No Show" },
+                  };
+                  const st = statusConfig[b.status] || statusConfig.pending;
+                  const dateStr = new Date(b.scheduled_date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+                  const isUpcoming = b.status === "pending" || b.status === "confirmed";
+
+                  return (
+                    <div key={b.id} className={`bg-white rounded-2xl border p-6 ${isUpcoming ? "border-black/[0.06]" : "border-black/[0.04] opacity-75"}`}>
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="h text-[14px] font-semibold text-[var(--text)]">{hostname}</h3>
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${st.bg} ${st.text} ${st.border}`}>{st.label}</span>
+                            {b.app_type && <span className="text-[11px] text-[var(--text-dim)]">{b.app_type}</span>}
+                          </div>
+                          {b.job_description && <p className="text-[12px] text-[var(--text-muted)] mt-1 line-clamp-2">{b.job_description}</p>}
+                        </div>
+                      </div>
+
+                      {/* Schedule details */}
+                      <div className="bg-[var(--bg-2)] rounded-xl p-3 mb-3">
+                        <div className="grid grid-cols-3 gap-3 text-[12px]">
+                          <div>
+                            <span className="text-[var(--text-dim)]">Date</span>
+                            <p className="font-medium text-[var(--text)] mt-0.5">{dateStr}</p>
+                          </div>
+                          <div>
+                            <span className="text-[var(--text-dim)]">Time</span>
+                            <p className="font-medium text-[var(--text)] mt-0.5">{b.scheduled_time}</p>
+                          </div>
+                          <div>
+                            <span className="text-[var(--text-dim)]">Duration</span>
+                            <p className="font-medium text-[var(--text)] mt-0.5">{b.duration_minutes}m</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tester info (shown to businesses) */}
+                      {b.tester_name && (
+                        <p className="text-[12px] text-[var(--text-muted)] mb-3">Tester: <span className="font-medium text-[var(--text)]">{b.tester_name}</span></p>
+                      )}
+
+                      {/* App ready badge */}
+                      {isUpcoming && b.app_ready && (
+                        <div className="flex items-center gap-1.5 mb-3">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                          <span className="text-[11px] text-green-600 font-medium">App marked as ready</span>
+                        </div>
+                      )}
+                      {isUpcoming && !b.app_ready && b.app_ready_deadline && (
+                        <p className="text-[11px] text-orange-600 mb-3">App must be ready by {new Date(b.app_ready_deadline).toLocaleString("en-AU", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
+                      )}
+
+                      {/* Tester actions */}
+                      {b.status === "pending" && b.tester_id && (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleBookingAction(b.id, "confirm")} disabled={bookingAction === b.id}
+                            className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-[13px] font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50">
+                            {bookingAction === b.id ? "..." : "Confirm"}
+                          </button>
+                          <button onClick={() => handleBookingAction(b.id, "cancel")} disabled={bookingAction === b.id}
+                            className="flex-1 py-2.5 rounded-xl border border-black/[0.08] text-[13px] font-medium text-[var(--text-muted)] hover:bg-black/[0.02] transition-colors disabled:opacity-50">
+                            Decline
+                          </button>
+                        </div>
+                      )}
+
+                      {b.notes && (
+                        <div className="mt-3 bg-black/[0.02] rounded-xl p-3">
+                          <p className="text-[11px] font-medium text-[var(--text-dim)] mb-1">Notes</p>
+                          <p className="text-[12px] text-[var(--text-muted)]">{b.notes}</p>
+                        </div>
                       )}
                     </div>
                   );

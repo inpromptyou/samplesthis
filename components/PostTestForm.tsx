@@ -17,6 +17,10 @@ export default function PostTestForm() {
     testers_count: 5,
     price_per_tester: 12,
     custom_price: "",
+    booking_enabled: false,
+    booking_date: "",
+    booking_time: "",
+    booking_duration: 30,
   });
 
   const pricePerTester = form.custom_price ? Number(form.custom_price) : form.price_per_tester;
@@ -37,6 +41,13 @@ export default function PostTestForm() {
           target_audience: form.target_audience,
           testers_count: form.testers_count,
           price_per_tester: pricePerTester,
+          ...(form.booking_enabled && {
+            booking: {
+              scheduled_date: form.booking_date,
+              scheduled_time: form.booking_time,
+              duration_minutes: form.booking_duration,
+            },
+          }),
         }),
       });
       const data = await res.json();
@@ -104,8 +115,48 @@ export default function PostTestForm() {
             <input className="input" placeholder="E.g. Women 25-40 who shop online" value={form.target_audience}
               onChange={e => setForm({ ...form, target_audience: e.target.value })} />
           </div>
-          <button onClick={() => { if (form.app_url && form.description) setStep(2); }}
-            disabled={!form.app_url || !form.description}
+
+          {/* Schedule a test session */}
+          <div className="border border-black/[0.06] rounded-xl p-4">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={form.booking_enabled}
+                onChange={e => setForm({ ...form, booking_enabled: e.target.checked })}
+                className="w-4 h-4 rounded border-black/[0.15] accent-orange-500" />
+              <div>
+                <span className="text-[13px] font-medium text-[var(--text)]">Schedule a test session</span>
+                <p className="text-[11px] text-[var(--text-dim)]">Book a specific date & time for the tester to test your app live</p>
+              </div>
+            </label>
+            {form.booking_enabled && (
+              <div className="mt-4 space-y-3 pt-3 border-t border-black/[0.04]">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1">Date</label>
+                    <input className="input" type="date" value={form.booking_date}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={e => setForm({ ...form, booking_date: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1">Time</label>
+                    <input className="input" type="time" value={form.booking_time}
+                      onChange={e => setForm({ ...form, booking_time: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1">Duration</label>
+                  <select className="input" value={form.booking_duration}
+                    onChange={e => setForm({ ...form, booking_duration: Number(e.target.value) })}>
+                    <option value={15}>15 minutes</option>
+                    <option value={30}>30 minutes</option>
+                    <option value={60}>60 minutes</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => { if (form.app_url && form.description && (!form.booking_enabled || (form.booking_date && form.booking_time))) setStep(2); }}
+            disabled={!form.app_url || !form.description || (form.booking_enabled && (!form.booking_date || !form.booking_time))}
             className="btn btn-primary w-full disabled:opacity-40">Continue</button>
         </div>
       )}
@@ -183,6 +234,16 @@ export default function PostTestForm() {
               <span className="text-[12px] text-[var(--text-dim)]">Tasks</span>
               <p className="text-[13px] text-[var(--text)] mt-1">{form.description}</p>
             </div>
+            {form.booking_enabled && form.booking_date && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <span className="text-[12px] text-blue-600 font-medium">Scheduled session</span>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-[13px]">
+                  <div><span className="text-blue-400">Date</span><p className="font-medium text-blue-800">{new Date(form.booking_date + "T00:00:00").toLocaleDateString("en-AU")}</p></div>
+                  <div><span className="text-blue-400">Time</span><p className="font-medium text-blue-800">{form.booking_time}</p></div>
+                  <div><span className="text-blue-400">Duration</span><p className="font-medium text-blue-800">{form.booking_duration}m</p></div>
+                </div>
+              </div>
+            )}
             <div className="bg-black rounded-xl p-4 flex justify-between items-center">
               <span className="text-[14px] text-white/60">Total</span>
               <span className="h text-xl font-bold text-white">${total} AUD</span>

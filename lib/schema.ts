@@ -88,6 +88,26 @@ export async function ensureTables() {
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP`;
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS payout_error TEXT`;
 
+    // Bookings system
+    await sql`CREATE TABLE IF NOT EXISTS bookings (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER REFERENCES orders(id),
+      tester_id INTEGER REFERENCES testers(id),
+      scheduled_date DATE NOT NULL,
+      scheduled_time VARCHAR(10) NOT NULL,
+      timezone VARCHAR(50) DEFAULT 'Australia/Sydney',
+      duration_minutes INTEGER DEFAULT 30,
+      status VARCHAR(20) DEFAULT 'pending',
+      app_ready BOOLEAN DEFAULT false,
+      app_ready_deadline TIMESTAMP,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      confirmed_at TIMESTAMP,
+      completed_at TIMESTAMP
+    )`;
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS booking_required BOOLEAN DEFAULT false`;
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS booking_deadline TIMESTAMP`;
+
     migrated = true;
   } catch (e) {
     console.error("Auto-migrate failed:", e);
