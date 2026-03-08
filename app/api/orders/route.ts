@@ -30,15 +30,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Payment system not configured. Please try again later." }, { status: 503 });
     }
 
-    // Require verified business auth
-    const token = req.cookies.get("business_token")?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Please verify your email first" }, { status: 401 });
-    }
+    // Accept either business or tester auth
+    const bizToken = req.cookies.get("business_token")?.value;
+    const testerToken = req.cookies.get("tester_token")?.value;
     const sql2 = getSql();
-    const [biz] = await sql2`SELECT id, email, company FROM businesses WHERE auth_token = ${token} AND verified = true`;
-    if (!biz) {
-      return NextResponse.json({ error: "Please verify your email first" }, { status: 401 });
+    
+    let userEmail: string;
+    let userCompany: string | null = null;
+
+    if (bizToken) {
+      const [biz] = await sql2`SELECT id, email, company FROM businesses WHERE auth_token = ${bizToken} AND verified = true`;
+      if (!biz) return NextResponse.json({ error: "Please verify your email first" }, { status: 401 });
+      userEmail = biz.email;
+      userCompany = biz.company;
+    } else if (testerToken) {
+      const [tester] = await sql2`SELECT id, email, name FROM testers WHERE auth_token = ${testerToken}`;
+      if (!tester) return NextResponse.json({ error: "Please log in first" }, { status: 401 });
+      userEmail = tester.email;
+      userCompany = tester.name;
+    } else {
+      return NextResponse.json({ error: "Please log in first" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -47,8 +58,8 @@ export async function POST(req: NextRequest) {
     const description = sanitize(body.description);
     const target_audience = sanitize(body.target_audience);
     const { testers_count, price_per_tester } = body;
-    const email = biz.email;
-    const company = body.company || biz.company;
+    const email = userEmail;
+    const company = body.company || userCompany;
 
     if (!app_url || !isValidUrl(app_url)) {
       return NextResponse.json({ error: "App URL is required" }, { status: 400 });

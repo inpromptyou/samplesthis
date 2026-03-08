@@ -52,8 +52,8 @@ export default function PostTestForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submission failed");
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+      if (data.checkoutUrl || data.checkout_url) {
+        window.location.href = data.checkoutUrl || data.checkout_url;
         return;
       }
       setDone(true);
