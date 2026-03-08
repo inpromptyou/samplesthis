@@ -30,27 +30,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Payment system not configured. Please try again later." }, { status: 503 });
     }
 
-    // Accept either business or tester auth
-    const bizToken = req.cookies.get("business_token")?.value;
-    const testerToken = req.cookies.get("tester_token")?.value;
-    const sql2 = getSql();
-    
-    let userEmail: string;
-    let userCompany: string | null = null;
-
-    if (bizToken) {
-      const [biz] = await sql2`SELECT id, email, company FROM businesses WHERE auth_token = ${bizToken} AND verified = true`;
-      if (!biz) return NextResponse.json({ error: "Please verify your email first" }, { status: 401 });
-      userEmail = biz.email;
-      userCompany = biz.company;
-    } else if (testerToken) {
-      const [tester] = await sql2`SELECT id, email, name FROM testers WHERE auth_token = ${testerToken}`;
-      if (!tester) return NextResponse.json({ error: "Please log in first" }, { status: 401 });
-      userEmail = tester.email;
-      userCompany = tester.name;
-    } else {
+    // Unified auth — one account for everyone
+    const token = req.cookies.get("tester_token")?.value;
+    if (!token) {
       return NextResponse.json({ error: "Please log in first" }, { status: 401 });
     }
+    const sql2 = getSql();
+    const [user] = await sql2`SELECT id, email, name FROM testers WHERE auth_token = ${token}`;
+    if (!user) {
+      return NextResponse.json({ error: "Please log in first" }, { status: 401 });
+    }
+    const userEmail = user.email;
+    const userCompany = user.name;
 
     const body = await req.json();
     const app_url = sanitize(body.app_url);

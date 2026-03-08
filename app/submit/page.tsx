@@ -12,35 +12,25 @@ const SUGGESTED_BUDGETS = [
   { per: 20, label: "Priority", speed: "~1h pickup" },
 ];
 
-interface Biz {
+interface User {
   id: number;
   email: string;
-  company: string | null;
+  name: string;
 }
 
 export default function SubmitPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
-  const [biz, setBiz] = useState<Biz | null>(null);
-
-  // Auth flow
-  const [authEmail, setAuthEmail] = useState("");
-  const [authCompany, setAuthCompany] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
-  const [code, setCode] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Job flow
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     app_url: "",
     app_type: "",
     description: "",
     target_audience: "",
-    company: "",
     testers_count: 5,
     price_per_tester: 12,
     custom_price: "",
@@ -50,56 +40,14 @@ export default function SubmitPage() {
   const total = form.testers_count * pricePerTester;
   const isValidPrice = pricePerTester >= 5;
 
-  // Check if already authed
+  // Check if logged in (unified auth — tester_token)
   useEffect(() => {
-    fetch("/api/business/me").then(r => r.json()).then(d => {
-      if (d.authenticated) {
-        setBiz(d.business);
-        setAuthed(true);
-      } else {
-        setAuthed(false);
+    fetch("/api/testers/me").then(r => r.json()).then(d => {
+      if (d.id) {
+        setUser({ id: d.id, email: d.email, name: d.name });
       }
-    }).catch(() => setAuthed(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
-
-  const sendCode = async () => {
-    if (!authEmail) return;
-    setAuthLoading(true);
-    setAuthError("");
-    try {
-      const r = await fetch("/api/business/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", email: authEmail, company: authCompany }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error);
-      setCodeSent(true);
-    } catch (e: unknown) {
-      setAuthError(e instanceof Error ? e.message : "Failed to send code");
-    }
-    setAuthLoading(false);
-  };
-
-  const verifyCode = async () => {
-    if (!code) return;
-    setAuthLoading(true);
-    setAuthError("");
-    try {
-      const r = await fetch("/api/business/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verify", email: authEmail, code, company: authCompany }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error);
-      setBiz({ id: d.id, email: authEmail, company: authCompany || null });
-      setAuthed(true);
-    } catch (e: unknown) {
-      setAuthError(e instanceof Error ? e.message : "Invalid code");
-    }
-    setAuthLoading(false);
-  };
 
   const submit = async () => {
     setError("");
@@ -118,8 +66,6 @@ export default function SubmitPage() {
       if (!res.ok) throw new Error(data.error);
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
-      } else {
-        setDone(true);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong");
@@ -128,7 +74,6 @@ export default function SubmitPage() {
     }
   };
 
-  // Total steps: verify (0) + 3 job steps
   const totalSteps = 3;
 
   return (
@@ -137,103 +82,36 @@ export default function SubmitPage() {
       <main className="pt-16 min-h-screen">
         <div className="max-w-xl mx-auto px-5 py-16 md:py-24">
 
-          {done ? (
+          {loading ? (
+            <div className="py-20 text-center text-[var(--text-dim)]">Loading...</div>
+          ) : !user ? (
+            /* ═══ NOT LOGGED IN — PROMPT TO SIGN UP ═══ */
             <div className="text-center">
               <div className="w-16 h-16 rounded-2xl grad-warm-subtle border border-orange-200 flex items-center justify-center mx-auto mb-6">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
               </div>
-              <h1 className="h text-2xl font-bold mb-3 text-[var(--text)]">Job posted.</h1>
-              <p className="text-[15px] text-[var(--text-muted)] mb-2">
-                We&apos;re matching {form.testers_count} tester{form.testers_count > 1 ? "s" : ""} to your audience now.
-              </p>
+              <h1 className="h text-2xl md:text-3xl font-bold mb-3 text-[var(--text)]">Post a test job</h1>
               <p className="text-[15px] text-[var(--text-muted)] mb-6">
-                You&apos;ll receive flinch reports as each tester completes their session.
+                Sign up or log in to post a test. Same account lets you test other apps too.
               </p>
-              <div className="card-light p-5 text-left">
-                <div className="space-y-2 text-[13px]">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">App</span>
-                    <span className="text-[var(--text)] font-medium truncate ml-4 max-w-[250px]">{form.app_url}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">Testers</span>
-                    <span className="text-[var(--text)] font-medium">{form.testers_count}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-muted)]">Per tester</span>
-                    <span className="text-[var(--text)] font-medium">${pricePerTester}</span>
-                  </div>
-                  <div className="border-t border-black/[0.05] pt-2 flex justify-between">
-                    <span className="text-[var(--text)] font-semibold">Total paid</span>
-                    <span className="h font-bold grad-warm">${total}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : authed === null ? (
-            <div className="py-20 text-center text-[var(--text-dim)]">Loading...</div>
-          ) : !authed ? (
-            /* ═══ EMAIL VERIFICATION ═══ */
-            <div>
-              <div className="text-center mb-10">
-                <h1 className="h text-2xl md:text-3xl font-bold mb-2 text-[var(--text)]">Post a test job</h1>
-                <p className="text-[15px] text-[var(--text-muted)]">
-                  Verify your email to get started. Takes 10 seconds.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-black/[0.06] p-6 md:p-8">
-                {!codeSent ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1.5">Work email</label>
-                      <input className="input" type="email" placeholder="you@company.com" value={authEmail}
-                        onChange={e => setAuthEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && sendCode()} />
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1.5">Company name (optional)</label>
-                      <input className="input" placeholder="Your company" value={authCompany}
-                        onChange={e => setAuthCompany(e.target.value)} />
-                    </div>
-                    {authError && <p className="text-[13px] text-red-600">{authError}</p>}
-                    <button onClick={sendCode} disabled={authLoading || !authEmail}
-                      className="btn btn-primary w-full disabled:opacity-40">
-                      {authLoading ? "Sending..." : "Send verification code"}
-                    </button>
-                    <p className="text-[11px] text-[var(--text-dim)] text-center">We&apos;ll send a 6-digit code to your email.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="text-center mb-2">
-                      <p className="text-[13px] text-[var(--text-muted)]">Code sent to <span className="font-medium text-[var(--text)]">{authEmail}</span></p>
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1.5">Verification code</label>
-                      <input className="input text-center text-xl tracking-[0.3em] font-mono" type="text" maxLength={6} placeholder="000000" value={code}
-                        onChange={e => setCode(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && verifyCode()} />
-                    </div>
-                    {authError && <p className="text-[13px] text-red-600">{authError}</p>}
-                    <button onClick={verifyCode} disabled={authLoading || code.length !== 6}
-                      className="btn btn-primary w-full disabled:opacity-40">
-                      {authLoading ? "Verifying..." : "Verify"}
-                    </button>
-                    <button onClick={() => { setCodeSent(false); setCode(""); setAuthError(""); }}
-                      className="text-[12px] text-[var(--text-dim)] hover:text-[var(--text)] transition-colors w-full text-center">
-                      Use a different email
-                    </button>
-                  </div>
-                )}
+              <div className="flex gap-3 justify-center">
+                <button onClick={() => {
+                  window.dispatchEvent(new CustomEvent("open-auth", { detail: "tester" }));
+                }} className="btn btn-primary btn-pill">Sign up</button>
+                <button onClick={() => {
+                  window.dispatchEvent(new CustomEvent("open-auth", { detail: "login" }));
+                }} className="btn btn-outline btn-pill">Log in</button>
               </div>
             </div>
           ) : (
-            /* ═══ JOB POSTING (authed) ═══ */
+            /* ═══ JOB POSTING (logged in) ═══ */
             <>
               <div className="text-center mb-10">
                 <h1 className="h text-2xl md:text-3xl font-bold mb-2 text-[var(--text)]">Post a test job</h1>
                 <p className="text-[15px] text-[var(--text-muted)]">
                   Set your own budget. Pay per tester. Results in hours.
                 </p>
-                <p className="text-[12px] text-[var(--text-dim)] mt-1">Posting as {biz?.email}</p>
+                <p className="text-[12px] text-[var(--text-dim)] mt-1">Posting as {user.email}</p>
               </div>
 
               {/* Progress */}
@@ -340,7 +218,7 @@ export default function SubmitPage() {
                       </div>
                       <div className="border-t border-black/[0.05] pt-2 flex justify-between items-center">
                         <span className="h text-[14px] font-bold text-[var(--text)]">Total</span>
-                        <span className="h text-2xl font-bold grad-warm">${total}</span>
+                        <span className="h text-2xl font-bold grad-warm">${total} AUD</span>
                       </div>
                     </div>
                   </div>
@@ -350,7 +228,7 @@ export default function SubmitPage() {
                   <div className="flex gap-3">
                     <button onClick={() => setStep(2)} className="btn btn-outline flex-1">Back</button>
                     <button onClick={submit} disabled={submitting || !isValidPrice} className="btn btn-primary flex-1 disabled:opacity-60">
-                      {submitting ? "Processing..." : `Pay $${total}`}
+                      {submitting ? "Processing..." : `Pay $${total} AUD`}
                     </button>
                   </div>
                   <p className="text-[11px] text-[var(--text-dim)] text-center">
