@@ -8,7 +8,11 @@ export async function POST(req: NextRequest) {
     await ensureTables();
     const tester = await getTester();
     if (!tester) {
-      return NextResponse.json({ error: "You must be signed in as a tester" }, { status: 401 });
+      return NextResponse.json({ error: "You must be signed in" }, { status: 401 });
+    }
+
+    if (!tester.stripe_onboarded || !tester.stripe_account_id) {
+      return NextResponse.json({ error: "Set up payouts before applying. Go to Dashboard → Payouts to connect your bank account." }, { status: 400 });
     }
 
     const { order_id, note } = await req.json();
