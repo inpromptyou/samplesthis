@@ -14,7 +14,11 @@ const INTEGRATIONS = [
     desc: "Custom GPT with Actions. Ask ChatGPT to test your app and it creates a real human test job.",
     setup: "Create a Custom GPT → Add Action → Import from URL → paste: https://flinchify.com/.well-known/openapi.json → Add your API key as Bearer auth.",
     icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#10A37F"/><path d="M15.5 8.5h-7l3.5 3.5-3.5 3.5h7" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      /* OpenAI logo */
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#10A37F"/>
+        <path d="M24.37 13.82a4.47 4.47 0 00-.38-3.67 4.53 4.53 0 00-4.88-2.18A4.47 4.47 0 0015.74 6a4.53 4.53 0 00-4.32 3.13 4.47 4.47 0 00-2.99 2.17 4.53 4.53 0 00.56 5.31 4.47 4.47 0 00.38 3.67 4.53 4.53 0 004.88 2.18A4.47 4.47 0 0017.63 24.5a4.53 4.53 0 004.32-3.13 4.47 4.47 0 002.99-2.17 4.53 4.53 0 00-.56-5.31z" fill="white" fillOpacity="0.9"/>
+      </svg>
     ),
     badge: "GPT Store",
     color: "#10A37F",
@@ -24,17 +28,26 @@ const INTEGRATIONS = [
     desc: "MCP server integration. Claude can create tests, check results, and manage credits — all through natural conversation.",
     setup: 'npm install -g flinchify-mcp\n\nAdd to claude_desktop_config.json:\n{\n  "mcpServers": {\n    "flinchify": {\n      "command": "npx",\n      "args": ["flinchify-mcp"],\n      "env": { "FLINCHIFY_API_KEY": "fk_..." }\n    }\n  }\n}',
     icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#D4A06A"/><path d="M8 8h8M8 12h6M8 16h4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+      /* Anthropic/Claude mark */
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#D4A373"/>
+        <path d="M18.8 10h-2.4L11 22h2.5l1.1-2.5h5.1L20.8 22H23.3L18.8 10zm-3.3 7.5L17.6 12.8l2.1 4.7h-4.2z" fill="white"/>
+      </svg>
     ),
     badge: "MCP",
-    color: "#D4A06A",
+    color: "#D4A373",
   },
   {
     name: "Cursor",
     desc: "MCP integration for Cursor IDE. Your coding agent requests human testing mid-workflow and reads structured results to fix issues.",
     setup: 'Add to .cursor/mcp.json:\n{\n  "mcpServers": {\n    "flinchify": {\n      "command": "npx",\n      "args": ["flinchify-mcp"],\n      "env": { "FLINCHIFY_API_KEY": "fk_..." }\n    }\n  }\n}',
     icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#000"/><path d="M7 7l10 5-10 5V7z" fill="white"/></svg>
+      /* Cursor logo */
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#000"/>
+        <path d="M9 8l14 8-14 8V8z" fill="white"/>
+        <path d="M9 8l14 8H9V8z" fill="white" fillOpacity="0.6"/>
+      </svg>
     ),
     badge: "MCP",
     color: "#000",
@@ -44,27 +57,40 @@ const INTEGRATIONS = [
     desc: "OpenAPI Actions integration. Grok can call the Flinchify API to create tests and retrieve results.",
     setup: "Use the OpenAPI spec at https://flinchify.com/.well-known/openapi.json with your API key as Bearer auth.",
     icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#1D9BF0"/><path d="M7 7l5 5m0 0l5 5m-5-5l5-5m-5 5l-5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+      /* xAI/Grok logo */
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#000"/>
+        <path d="M8 8l5.33 8L8 24h2.67l4-6 4 6H21.33L16 16l5.33-8H18.67l-4 6-4-6H8z" fill="white"/>
+      </svg>
     ),
     badge: "OpenAPI",
-    color: "#1D9BF0",
+    color: "#000",
   },
   {
     name: "CLI / Terminal",
     desc: "Install globally with npm. Works with any AI coding agent that can run shell commands — Codex, Replit Agent, Bolt, or custom setups.",
     setup: "npm install -g flinchify\nflinchify init\nflinchify test https://myapp.com --testers 3 --budget 10",
     icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#1E1E1E"/><path d="M7 8l4 4-4 4m6 0h4" stroke="#98C379" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      /* Terminal icon */
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#1E1E1E"/>
+        <path d="M10 11l5 5-5 5" stroke="#4EC9B0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M17 21h5" stroke="#4EC9B0" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
     ),
     badge: "npm",
-    color: "#98C379",
+    color: "#4EC9B0",
   },
   {
     name: "REST API",
     desc: "Direct HTTP integration for custom agents, CI/CD pipelines, or any platform. Full OpenAPI 3.1 spec available.",
     setup: 'curl -X POST https://flinchify.com/api/v1/tests \\\n  -H "Authorization: Bearer fk_..." \\\n  -H "Content-Type: application/json" \\\n  -d \'{"url":"https://myapp.com","testers":3}\'',
     icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#F97316"/><path d="M8 12h8M12 8v8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+      /* API/bolt icon */
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#F97316"/>
+        <path d="M17 8l-7 12h6l-1 6 7-12h-6l1-6z" fill="white"/>
+      </svg>
     ),
     badge: "API",
     color: "#F97316",
