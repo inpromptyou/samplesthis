@@ -16,6 +16,38 @@
   --dark: #111111;
 }
 
+/* ─── Dashboard themes ─── */
+[data-theme="light"] {
+  --dash-bg: #F9FAFB;
+  --dash-sidebar: #FFFFFF;
+  --dash-card: #FFFFFF;
+  --dash-card-hover: #F3F4F6;
+  --dash-border: rgba(0,0,0,0.06);
+  --dash-text: #111827;
+  --dash-text-secondary: #6B7280;
+  --dash-text-dim: #9CA3AF;
+  --dash-input-bg: #FFFFFF;
+  --dash-hover: rgba(0,0,0,0.03);
+  --dash-active: rgba(249,115,22,0.08);
+  --dash-active-text: #F97316;
+  --dash-scrollbar: rgba(0,0,0,0.1);
+}
+[data-theme="dark"] {
+  --dash-bg: #0F1117;
+  --dash-sidebar: #1A1D27;
+  --dash-card: #1E2230;
+  --dash-card-hover: #252936;
+  --dash-border: rgba(255,255,255,0.06);
+  --dash-text: #F9FAFB;
+  --dash-text-secondary: #9CA3AF;
+  --dash-text-dim: #6B7280;
+  --dash-input-bg: #1A1D27;
+  --dash-hover: rgba(255,255,255,0.04);
+  --dash-active: rgba(249,115,22,0.12);
+  --dash-active-text: #FB923C;
+  --dash-scrollbar: rgba(255,255,255,0.1);
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body { background: var(--bg); color: var(--text); letter-spacing: -0.01em; }

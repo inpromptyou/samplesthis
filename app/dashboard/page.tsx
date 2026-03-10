@@ -1,131 +1,203 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import PostTestForm from "@/components/PostTestForm";
 
+/* ═══════════════════════════════════════════════
+   TYPES
+   ═══════════════════════════════════════════════ */
+
 interface Tester {
-  id: number;
-  name: string;
-  email: string;
-  age_range: string | null;
-  location: string | null;
-  devices: string;
-  interests: string;
-  tech_comfort: number;
-  bio: string | null;
-  tests_completed: number;
-  total_earned_cents: number;
-  avg_rating: number;
-  stripe_onboarded: boolean;
-  credit_cents: number;
-  created_at: string;
+  id: number; name: string; email: string; age_range: string | null;
+  location: string | null; devices: string; interests: string;
+  tech_comfort: number; bio: string | null; tests_completed: number;
+  total_earned_cents: number; avg_rating: number; stripe_onboarded: boolean;
+  credit_cents: number; created_at: string;
 }
 
 interface MyApp {
-  id: number;
-  order_id: number;
-  status: string;
-  app_url: string;
-  app_type: string | null;
-  job_description: string | null;
-  price_per_tester_cents: number;
-  feedback: string | null;
-  screen_recording_url: string | null;
-  payout_cents: number;
-  payout_transfer_id: string | null;
-  created_at: string;
-  submitted_at: string | null;
+  id: number; order_id: number; status: string; app_url: string;
+  app_type: string | null; job_description: string | null;
+  price_per_tester_cents: number; feedback: string | null;
+  screen_recording_url: string | null; payout_cents: number;
+  payout_transfer_id: string | null; created_at: string; submitted_at: string | null;
 }
 
-const NAV_ITEMS = [
-  { key: "overview", label: "Overview", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
-  { key: "explore", label: "Explore Jobs", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
-  { key: "myjobs", label: "My Jobs", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
-  { key: "bookings", label: "Bookings", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
-  { key: "posttest", label: "Post a Test", icon: "M12 4v16m8-8H4" },
-  { key: "payouts", label: "Payouts", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+interface Booking {
+  id: number; order_id: number; tester_id: number | null;
+  scheduled_date: string; scheduled_time: string; timezone: string;
+  duration_minutes: number; status: string; app_ready: boolean;
+  app_ready_deadline: string | null; notes: string | null;
+  created_at: string; confirmed_at: string | null; completed_at: string | null;
+  app_url: string; app_type: string | null; job_description: string | null;
+  tester_name?: string; tester_email?: string;
+}
 
-  { key: "howit", label: "How it Works", icon: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-  { key: "pricing", label: "Pricing", icon: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" },
-  { key: "profile", label: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-  { key: "api", label: "API Keys", icon: "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" },
+interface ExploreJob {
+  id: number; app_url: string; app_type: string | null; description: string | null;
+  target_audience: string | null; testers_count: number; price_cents: number;
+  price_per_tester_cents: number; status: string; applications_count: number;
+  accepted_count: number; created_at: string;
+}
+
+/* ═══════════════════════════════════════════════
+   NAV CONFIG
+   ═══════════════════════════════════════════════ */
+
+const NAV_ITEMS = [
+  { key: "overview", label: "Overview", section: "main", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  )},
+  { key: "explore", label: "Explore Jobs", section: "main", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+  )},
+  { key: "myjobs", label: "My Jobs", section: "main", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+  )},
+  { key: "posttest", label: "Post a Test", section: "main", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  )},
+  { key: "bookings", label: "Bookings", section: "main", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  )},
+  { key: "payouts", label: "Payouts", section: "finance", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+  )},
+  { key: "api", label: "API & Credits", section: "finance", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+  )},
+  { key: "profile", label: "Profile", section: "account", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  )},
+  { key: "settings", label: "Settings", section: "account", icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  )},
 ];
 
 const SORT_OPTIONS = ["Newest", "Highest pay", "Most spots"];
 const TYPE_FILTERS = ["All", "Web App", "Mobile App", "SaaS", "E-commerce", "Other"];
 
+/* ═══════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════ */
+
 function dom(url: string) {
   try { return new URL(url).hostname.replace("www.", ""); } catch { return url; }
 }
-
 function avatarColor(s: string) {
-  const colors = ["#F97316", "#EF4444", "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EC4899", "#6366F1"];
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
-  return colors[Math.abs(hash) % colors.length];
+  const c = ["#F97316","#EF4444","#8B5CF6","#06B6D4","#10B981","#F59E0B","#EC4899","#6366F1"];
+  let h = 0; for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
+  return c[Math.abs(h) % c.length];
 }
 
-interface Booking {
-  id: number;
-  order_id: number;
-  tester_id: number | null;
-  scheduled_date: string;
-  scheduled_time: string;
-  timezone: string;
-  duration_minutes: number;
-  status: string;
-  app_ready: boolean;
-  app_ready_deadline: string | null;
-  notes: string | null;
-  created_at: string;
-  confirmed_at: string | null;
-  completed_at: string | null;
-  app_url: string;
-  app_type: string | null;
-  job_description: string | null;
-  tester_name?: string;
-  tester_email?: string;
+/* ═══════════════════════════════════════════════
+   THEME HOOK
+   ═══════════════════════════════════════════════ */
+
+function useTheme() {
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    const saved = localStorage.getItem("dash-theme") as "light" | "dark" | null;
+    const t = saved || "light";
+    setThemeState(t);
+    document.documentElement.setAttribute("data-theme", t);
+  }, []);
+  const setTheme = (t: "light" | "dark") => {
+    setThemeState(t);
+    localStorage.setItem("dash-theme", t);
+    document.documentElement.setAttribute("data-theme", t);
+  };
+  const toggle = () => setTheme(theme === "light" ? "dark" : "light");
+  return { theme, toggle };
 }
 
-interface ExploreJob {
-  id: number;
-  app_url: string;
-  app_type: string | null;
-  description: string | null;
-  target_audience: string | null;
-  testers_count: number;
-  price_cents: number;
-  price_per_tester_cents: number;
-  status: string;
-  applications_count: number;
-  accepted_count: number;
-  created_at: string;
+/* ═══════════════════════════════════════════════
+   MINI CHARTS (SVG)
+   ═══════════════════════════════════════════════ */
+
+function BarChart({ data, color = "#F97316" }: { data: number[]; color?: string }) {
+  const max = Math.max(...data, 1);
+  const w = 280, h = 120, gap = 4;
+  const barW = (w - gap * (data.length - 1)) / data.length;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "auto" }}>
+      {data.map((v, i) => {
+        const barH = (v / max) * (h - 8);
+        return (
+          <rect key={i} x={i * (barW + gap)} y={h - barH} width={barW} height={barH}
+            rx={3} fill={color} opacity={0.15 + (0.85 * (v / max))} />
+        );
+      })}
+    </svg>
+  );
 }
+
+function LineChart({ data, color = "#10B981" }: { data: number[]; color?: string }) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const w = 280, h = 100, px = 4;
+  const pts = data.map((v, i) => {
+    const x = px + (i / (data.length - 1)) * (w - 2 * px);
+    const y = h - px - (v / max) * (h - 2 * px);
+    return `${x},${y}`;
+  });
+  const areaPath = `M${px},${h} L${pts.join(" L")} L${w - px},${h} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "auto" }}>
+      <defs>
+        <linearGradient id="lc-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#lc-grad)" />
+      <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      {data.map((v, i) => {
+        const x = px + (i / (data.length - 1)) * (w - 2 * px);
+        const y = h - px - (v / max) * (h - 2 * px);
+        return <circle key={i} cx={x} cy={y} r="3" fill={color} />;
+      })}
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN EXPORT
+   ═══════════════════════════════════════════════ */
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-[var(--text-dim)]">Loading...</div></div>}>
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--dash-bg, #F9FAFB)", color: "var(--dash-text-dim, #9CA3AF)" }}>
+        Loading...
+      </div>
+    }>
       <Dashboard />
     </Suspense>
   );
 }
 
+/* ═══════════════════════════════════════════════
+   DASHBOARD SHELL
+   ═══════════════════════════════════════════════ */
+
 function Dashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { theme, toggle } = useTheme();
   const [tester, setTester] = useState<Tester | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(searchParams.get("tab") || "overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectStatus, setConnectStatus] = useState<{ onboarded: boolean; hasAccount: boolean } | null>(null);
   const [myApps, setMyApps] = useState<MyApp[]>([]);
   const [myAppsLoading, setMyAppsLoading] = useState(false);
   const [submitForm, setSubmitForm] = useState<{ id: number; feedback: string; recording: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Explore tab state
   const [exploreJobs, setExploreJobs] = useState<ExploreJob[]>([]);
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreSearch, setExploreSearch] = useState("");
@@ -134,14 +206,11 @@ function Dashboard() {
   const [applying, setApplying] = useState<number | null>(null);
   const [appliedSet, setAppliedSet] = useState<Set<number>>(new Set());
   const [applyError, setApplyError] = useState("");
-  // Bookings tab state
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingAction, setBookingAction] = useState<number | null>(null);
-  // My posted jobs
   const [postedJobs, setPostedJobs] = useState<ExploreJob[]>([]);
   const [postedLoading, setPostedLoading] = useState(false);
-  // Job management
   const [managingJob, setManagingJob] = useState<number | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [jobApplicants, setJobApplicants] = useState<any[]>([]);
@@ -152,14 +221,8 @@ function Dashboard() {
   useEffect(() => {
     fetch("/api/testers/me")
       .then(r => r.json())
-      .then(d => {
-        if (!d.authenticated) { router.push("/"); return; }
-        setTester(d.tester);
-        setLoading(false);
-      })
+      .then(d => { if (!d.authenticated) { router.push("/"); return; } setTester(d.tester); setLoading(false); })
       .catch(() => router.push("/"));
-
-    // Check Stripe Connect status
     fetch("/api/connect/status").then(r => r.json()).then(d => setConnectStatus(d)).catch(() => {});
   }, [router]);
 
@@ -182,6 +245,7 @@ function Dashboard() {
     }
   }, [tab]);
 
+  /* ─── Actions ─── */
   const applyToJob = async (jobId: number) => {
     setApplying(jobId); setApplyError("");
     try {
@@ -197,88 +261,57 @@ function Dashboard() {
     if (!submitForm || !submitForm.feedback) return;
     setSubmitting(true);
     try {
-      const r = await fetch("/api/applications/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          application_id: submitForm.id,
-          feedback: submitForm.feedback,
-          screen_recording_url: submitForm.recording || null,
-        }),
-      });
+      const r = await fetch("/api/applications/submit", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ application_id: submitForm.id, feedback: submitForm.feedback, screen_recording_url: submitForm.recording || null }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setSubmitForm(null);
-      // Refresh
       const apps = await fetch("/api/applications/mine").then(r2 => r2.json());
       setMyApps(apps.applications || []);
-      if (d.payout?.paid) {
-        alert(`Submitted! You earned $${(d.payout.amount / 100).toFixed(2)}`);
-      } else {
-        alert("Submitted! " + (d.payout?.error || "Payout will process once you set up Stripe."));
-      }
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed to submit");
-    }
+      if (d.payout?.paid) alert(`Submitted! You earned $${(d.payout.amount / 100).toFixed(2)}`);
+      else alert("Submitted! " + (d.payout?.error || "Payout will process once you set up Stripe."));
+    } catch (e: unknown) { alert(e instanceof Error ? e.message : "Failed to submit"); }
     setSubmitting(false);
   };
 
   const handleBookingAction = async (bookingId: number, action: string) => {
     setBookingAction(bookingId);
     try {
-      const r = await fetch(`/api/bookings/${bookingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
+      const r = await fetch(`/api/bookings/${bookingId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
-      // Refresh bookings
       const res = await fetch("/api/bookings").then(r2 => r2.json());
       setBookings(res.bookings || []);
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Action failed");
-    }
+    } catch (e: unknown) { alert(e instanceof Error ? e.message : "Action failed"); }
     setBookingAction(null);
   };
 
-  const loadApplicants = async (orderId: number) => {
-    setManagingJob(orderId);
-    setApplicantsLoading(true);
-    try {
-      const r = await fetch(`/api/orders/${orderId}/applicants`);
-      const d = await r.json();
-      setJobApplicants(d.applicants || []);
-    } catch { setJobApplicants([]); }
+  const loadApplicants = useCallback(async (orderId: number) => {
+    setManagingJob(orderId); setApplicantsLoading(true);
+    try { const r = await fetch(`/api/orders/${orderId}/applicants`); const d = await r.json(); setJobApplicants(d.applicants || []); }
+    catch { setJobApplicants([]); }
     setApplicantsLoading(false);
-  };
+  }, []);
 
   const handleApplicant = async (orderId: number, applicationId: number, action: "accept" | "deny") => {
     setActionLoading(applicationId);
     try {
-      const r = await fetch(`/api/orders/${orderId}/applicants`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ application_id: applicationId, action }),
-      });
+      const r = await fetch(`/api/orders/${orderId}/applicants`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ application_id: applicationId, action }) });
       const d = await r.json();
       if (!r.ok) { alert(d.error); setActionLoading(null); return; }
-      // Refresh
       await loadApplicants(orderId);
     } catch { alert("Action failed"); }
     setActionLoading(null);
   };
 
   const cancelJob = async (orderId: number) => {
-    if (!confirm("Cancel this job? You'll receive credit (no cash refund). This cannot be undone.")) return;
+    if (!confirm("Cancel this job? You'll receive credit (no cash refund).")) return;
     setCancellingJob(true);
     try {
       const r = await fetch(`/api/orders/${orderId}/cancel`, { method: "POST" });
       const d = await r.json();
       if (!r.ok) { alert(d.error); setCancellingJob(false); return; }
-      alert(d.message);
-      setManagingJob(null);
-      // Refresh posted jobs
+      alert(d.message); setManagingJob(null);
       fetch("/api/orders/mine").then(r2 => r2.json()).then(d2 => setPostedJobs(d2.orders || []));
     } catch { alert("Cancel failed"); }
     setCancellingJob(false);
@@ -289,21 +322,23 @@ function Dashboard() {
     try {
       const r = await fetch("/api/connect/onboard", { method: "POST" });
       const d = await r.json();
-      if (d.url) {
-        window.location.href = d.url;
-        return; // Don't reset loading — we're navigating away
-      }
+      if (d.url) { window.location.href = d.url; return; }
       alert(d.error || "Failed to start payout setup");
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Something went wrong connecting to Stripe");
-    }
+    } catch (e: unknown) { alert(e instanceof Error ? e.message : "Something went wrong"); }
     setConnectLoading(false);
   };
 
+  const switchTab = (key: string) => { setTab(key); setSidebarOpen(false); };
+
+  /* ─── Loading state ─── */
   if (loading || !tester) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-[var(--text-dim)]">Loading...</div>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--dash-bg)", color: "var(--dash-text-dim)" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 32, height: 32, border: "3px solid var(--dash-border)", borderTopColor: "#F97316", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <span style={{ fontSize: 13 }}>Loading dashboard...</span>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
       </div>
     );
   }
@@ -313,314 +348,575 @@ function Dashboard() {
   const earned = (tester.total_earned_cents || 0) / 100;
   const memberSince = new Date(tester.created_at).toLocaleDateString("en-AU", { month: "long", year: "numeric" });
 
+  /* ─── Sidebar sections ─── */
+  const sections = [
+    { id: "main", label: null, items: NAV_ITEMS.filter(n => n.section === "main") },
+    { id: "finance", label: "Finance", items: NAV_ITEMS.filter(n => n.section === "finance") },
+    { id: "account", label: "Account", items: NAV_ITEMS.filter(n => n.section === "account") },
+  ];
+
   return (
-    <div className="min-h-screen bg-[var(--bg-2)]">
-      {/* Horizontal header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-black/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-[56px] sm:h-[60px] flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <Image src="/logo.png" alt="Flinchify" width={28} height={28} className="sm:w-8 sm:h-8" />
-            <span className="h text-[15px] font-bold text-[var(--text)] hidden sm:block">Flinchify</span>
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--dash-bg)", color: "var(--dash-text)", fontFamily: "'Inter', system-ui, sans-serif" }}>
+
+      {/* ══════ MOBILE OVERLAY ══════ */}
+      {sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 90, display: "block" }} />
+      )}
+
+      {/* ══════ SIDEBAR ══════ */}
+      <aside style={{
+        position: "fixed", top: 0, left: 0, bottom: 0,
+        width: 240, background: "var(--dash-sidebar)", borderRight: "1px solid var(--dash-border)",
+        display: "flex", flexDirection: "column", zIndex: 100,
+        transform: sidebarOpen ? "translateX(0)" : undefined,
+        transition: "transform 0.2s ease",
+      }} className="sidebar-aside">
+        {/* Logo */}
+        <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+            <Image src="/logo.png" alt="Flinchify" width={28} height={28} />
+            <span className="h" style={{ fontSize: 16, fontWeight: 700, color: "var(--dash-text)" }}>Flinchify</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-[13px] font-bold">
-                {tester.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-[13px] font-semibold text-[var(--text)] leading-tight">{tester.name}</p>
-                <p className="text-[11px] text-[var(--text-dim)] leading-tight">{tester.email}</p>
-              </div>
+          {/* Mobile close */}
+          <button onClick={() => setSidebarOpen(false)} className="sidebar-close"
+            style={{ display: "none", background: "none", border: "none", color: "var(--dash-text-dim)", cursor: "pointer", padding: 4 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, overflowY: "auto", padding: "0 12px" }}>
+          {sections.map(sec => (
+            <div key={sec.id} style={{ marginBottom: 8 }}>
+              {sec.label && (
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", padding: "12px 8px 4px", margin: 0 }}>
+                  {sec.label}
+                </p>
+              )}
+              {sec.items.map(item => {
+                const active = tab === item.key;
+                return (
+                  <button key={item.key} onClick={() => switchTab(item.key)} style={{
+                    display: "flex", alignItems: "center", gap: 10, width: "100%",
+                    padding: "8px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+                    fontSize: 13, fontWeight: active ? 600 : 500, textAlign: "left",
+                    background: active ? "var(--dash-active)" : "transparent",
+                    color: active ? "var(--dash-active-text)" : "var(--dash-text-secondary)",
+                    transition: "all 0.15s ease",
+                  }}
+                    onMouseEnter={e => { if (!active) (e.currentTarget.style.background = "var(--dash-hover)"); }}
+                    onMouseLeave={e => { if (!active) (e.currentTarget.style.background = "transparent"); }}
+                  >
+                    <span style={{ display: "flex", opacity: active ? 1 : 0.6 }}>{item.icon}</span>
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
-            <button onClick={async () => {
-              await fetch("/api/auth/logout", { method: "POST" });
-              window.location.href = "/";
-            }} className="text-[12px] font-medium text-[var(--text-dim)] hover:text-[var(--text)] transition-colors px-3 py-1.5 rounded-lg border border-black/[0.06] hover:border-black/[0.12]">
-              Sign out
+          ))}
+        </nav>
+
+        {/* Bottom: theme + user */}
+        <div style={{ padding: "12px 12px 16px", borderTop: "1px solid var(--dash-border)" }}>
+          {/* Theme toggle */}
+          <button onClick={toggle} style={{
+            display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 10px",
+            borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
+            background: "transparent", color: "var(--dash-text-secondary)", textAlign: "left",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--dash-hover)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+          >
+            {theme === "light" ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            )}
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
+
+          {/* User */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 10px 0" }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: "50%",
+              background: "linear-gradient(135deg, #F97316, #F59E0B)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "white", fontSize: 13, fontWeight: 700, flexShrink: 0,
+            }}>
+              {tester.name.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tester.name}</p>
+              <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tester.email}</p>
+            </div>
+            <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/"; }}
+              style={{ background: "none", border: "none", color: "var(--dash-text-dim)", cursor: "pointer", padding: 4, flexShrink: 0 }}
+              title="Sign out">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             </button>
           </div>
         </div>
+      </aside>
 
-        {/* Horizontal pill tabs */}
-        <div className="border-t border-black/[0.04]">
-          <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-            <div className="flex gap-1 py-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              {NAV_ITEMS.map(item => (
-                <button key={item.key} onClick={() => setTab(item.key)}
-                  className={`shrink-0 snap-start px-4 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${
-                    tab === item.key
-                      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm shadow-orange-200"
-                      : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-black/[0.03]"
-                  }`}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main */}
-      <main className="max-w-[1200px] mx-auto p-4 sm:p-6 md:p-10">
-        {tab === "overview" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-6">Welcome back, {tester.name}</h1>
-
-            {/* Payout setup banner */}
-            {connectStatus && !connectStatus.onboarded && (
-              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 mb-6 flex items-center justify-between gap-4">
-                <div>
-                  <p className="h text-[14px] font-semibold text-orange-800">Set up payouts to get paid</p>
-                  <p className="text-[12px] text-orange-600 mt-0.5">Connect your bank account so you can receive payments when you complete tests.</p>
-                </div>
-                <button onClick={setupPayouts} disabled={connectLoading}
-                  className="shrink-0 px-4 py-2 rounded-xl bg-orange-500 text-white text-[13px] font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50">
-                  {connectLoading ? "Loading..." : "Set up"}
-                </button>
-              </div>
+      {/* ══════ MAIN CONTENT ══════ */}
+      <main className="dash-main" style={{ marginLeft: 240, flex: 1, minHeight: "100vh" }}>
+        {/* Top bar (mobile) */}
+        <header className="dash-topbar" style={{
+          display: "none", position: "sticky", top: 0, zIndex: 50,
+          background: "var(--dash-sidebar)", borderBottom: "1px solid var(--dash-border)",
+          padding: "12px 16px", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <button onClick={() => setSidebarOpen(true)}
+            style={{ background: "none", border: "none", color: "var(--dash-text)", cursor: "pointer", padding: 4 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </button>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <Image src="/logo.png" alt="Flinchify" width={24} height={24} />
+            <span className="h" style={{ fontSize: 15, fontWeight: 700, color: "var(--dash-text)" }}>Flinchify</span>
+          </Link>
+          <button onClick={toggle} style={{ background: "none", border: "none", color: "var(--dash-text-dim)", cursor: "pointer", padding: 4 }}>
+            {theme === "light" ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
             )}
+          </button>
+        </header>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {[
-                { label: "Tests Completed", value: tester.tests_completed, color: "text-[var(--text)]" },
-                { label: "Total Earned", value: `$${earned}`, color: "text-[var(--accent)]" },
-                { label: "Credit", value: tester.credit_cents > 0 ? `$${(tester.credit_cents / 100).toFixed(2)}` : "$0", color: tester.credit_cents > 0 ? "text-green-600" : "text-[var(--text)]" },
-                { label: "Avg Rating", value: tester.avg_rating > 0 ? `${tester.avg_rating}/5` : "—", color: "text-[var(--text)]" },
-              ].map(s => (
-                <div key={s.label} className="bg-white rounded-2xl border border-black/[0.04] p-5">
-                  <p className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider mb-1 font-medium">{s.label}</p>
-                  <p className={`h text-xl font-bold ${s.color}`}>{s.value}</p>
-                </div>
-              ))}
-            </div>
+        {/* Page content */}
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px 48px" }}>
 
-            {/* Quick actions */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Link href="/explore" className="bg-white rounded-2xl border border-black/[0.04] p-6 text-left hover:border-black/[0.08] transition-colors block">
-                <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-1">Explore jobs</h3>
-                <p className="text-[13px] text-[var(--text-muted)]">Find test jobs matched to your profile and start earning.</p>
-              </Link>
-              <button onClick={() => setTab("profile")} className="bg-white rounded-2xl border border-black/[0.04] p-6 text-left hover:border-black/[0.08] transition-colors">
-                <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-1">Update your profile</h3>
-                <p className="text-[13px] text-[var(--text-muted)]">Keep your info current to get matched to better jobs.</p>
-              </button>
-            </div>
-
-            {/* My Posted Jobs */}
-            {postedJobs.length > 0 && (
-              <div className="mt-8">
-                <h2 className="h text-[16px] font-semibold text-[var(--text)] mb-4">My posted jobs</h2>
-                <div className="space-y-3">
-                  {postedJobs.map(job => (
-                    <div key={job.id} className="bg-white rounded-2xl border border-black/[0.04] p-5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="h text-[14px] font-semibold text-[var(--text)]">{dom(job.app_url)}</p>
-                          <p className="text-[12px] text-[var(--text-dim)] mt-0.5">{job.app_type} · Posted {new Date(job.created_at).toLocaleDateString("en-AU")}</p>
-                          {job.description && <p className="text-[13px] text-[var(--text-muted)] mt-2 line-clamp-2">{job.description}</p>}
-                        </div>
-                        <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${
-                          job.status === "paid" ? "bg-green-50 text-green-700" : job.status === "cancelled" ? "bg-red-50 text-red-700" : "bg-yellow-50 text-yellow-700"
-                        }`}>{job.status === "paid" ? "Live" : job.status === "cancelled" ? "Cancelled" : job.status}</span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-3">
-                        <span className="text-[12px] text-[var(--text-dim)]">{job.applications_count || 0} application{(job.applications_count || 0) !== 1 ? "s" : ""}</span>
-                        <span className="text-[12px] text-[var(--text-dim)]">{job.accepted_count || 0}/{job.testers_count} accepted</span>
-                        <span className="text-[12px] text-[var(--text-dim)]">${((job.price_per_tester_cents || 0) / 100).toFixed(0)}/tester</span>
-                        {job.status === "paid" && (
-                          <button onClick={() => loadApplicants(job.id)} className="ml-auto text-[12px] font-semibold text-orange-600 hover:text-orange-700">
-                            Manage →
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Applicant management panel */}
-                      {managingJob === job.id && (
-                        <div className="mt-4 pt-4 border-t border-black/[0.06]">
-                          {applicantsLoading ? (
-                            <p className="text-[13px] text-[var(--text-dim)]">Loading applicants...</p>
-                          ) : jobApplicants.length === 0 ? (
-                            <p className="text-[13px] text-[var(--text-muted)]">No applicants yet. Testers will apply as they discover your job.</p>
-                          ) : (
-                            <div className="space-y-3">
-                              <p className="text-[12px] font-semibold text-[var(--text-dim)] uppercase tracking-wider">Applicants ({jobApplicants.length})</p>
-                              {jobApplicants.map((a: { id: number; tester_id: number; name: string; email: string; location: string | null; country: string | null; bio: string | null; tests_completed: number; avg_rating: number; status: string; note: string | null; feedback: string | null; submitted_at: string | null; linkedin: string | null; portfolio: string | null; twitter: string | null; github: string | null; devices: string; interests: string; deadline_at: string | null; accepted_at: string | null }) => (
-                                <div key={a.id} className="bg-[var(--bg-2)] rounded-xl p-4">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[14px] font-bold shrink-0" style={{ backgroundColor: avatarColor(a.name) }}>
-                                        {a.name.charAt(0).toUpperCase()}
-                                      </div>
-                                      <div>
-                                        <p className="text-[14px] font-semibold text-[var(--text)]">{a.name}</p>
-                                        <p className="text-[11px] text-[var(--text-dim)]">
-                                          {a.location || a.country || "Unknown location"} · {a.tests_completed} tests · {a.avg_rating > 0 ? `${a.avg_rating}/5` : "New"}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <span className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-semibold ${
-                                      a.status === "accepted" ? "bg-green-50 text-green-700" :
-                                      a.status === "rejected" ? "bg-red-50 text-red-700" :
-                                      a.status === "submitted" ? "bg-blue-50 text-blue-700" :
-                                      "bg-yellow-50 text-yellow-700"
-                                    }`}>{a.status}</span>
-                                  </div>
-                                  {a.bio && <p className="text-[12px] text-[var(--text-muted)] mt-2 line-clamp-2">{a.bio}</p>}
-                                  {a.note && <p className="text-[12px] text-[var(--text-muted)] mt-1 italic">&quot;{a.note}&quot;</p>}
-                                  {/* Deadline */}
-                                  {a.status === "accepted" && a.deadline_at && (() => {
-                                    const expired = new Date(a.deadline_at) < new Date();
-                                    const fmt = new Date(a.deadline_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
-                                    return (
-                                      <p className={`text-[11px] mt-1.5 font-medium ${expired ? "text-red-600" : "text-orange-600"}`}>
-                                        {expired ? "Deadline passed" : `Due: ${fmt}`}
-                                      </p>
-                                    );
-                                  })()}
-                                  {/* Links */}
-                                  <div className="flex gap-2 mt-2 flex-wrap">
-                                    {a.linkedin && <a href={a.linkedin} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-600 hover:underline">LinkedIn</a>}
-                                    {a.portfolio && <a href={a.portfolio} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-600 hover:underline">Portfolio</a>}
-                                    {a.twitter && <a href={`https://x.com/${a.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-600 hover:underline">X</a>}
-                                    {a.github && <a href={`https://github.com/${a.github}`} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-600 hover:underline">GitHub</a>}
-                                  </div>
-                                  {/* Submitted feedback */}
-                                  {a.feedback && (
-                                    <div className="mt-2 p-3 bg-white rounded-lg border border-black/[0.04]">
-                                      <p className="text-[11px] font-semibold text-[var(--text-dim)] mb-1">Feedback</p>
-                                      <p className="text-[13px] text-[var(--text)]">{a.feedback}</p>
-                                    </div>
-                                  )}
-                                  {/* Actions */}
-                                  {a.status === "pending" && (
-                                    <div className="flex gap-2 mt-3">
-                                      <button onClick={() => handleApplicant(job.id, a.id, "accept")}
-                                        disabled={actionLoading === a.id}
-                                        className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-[12px] font-semibold hover:bg-green-700 disabled:opacity-50">
-                                        {actionLoading === a.id ? "..." : "Accept"}
-                                      </button>
-                                      <button onClick={() => handleApplicant(job.id, a.id, "deny")}
-                                        disabled={actionLoading === a.id}
-                                        className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-[12px] font-semibold hover:bg-red-100 disabled:opacity-50">
-                                        {actionLoading === a.id ? "..." : "Deny"}
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          {/* Cancel job */}
-                          <div className="mt-4 pt-3 border-t border-black/[0.06] flex items-center justify-between">
-                            <p className="text-[11px] text-[var(--text-dim)]">Cancel for credit (no cash refund)</p>
-                            <button onClick={() => cancelJob(job.id)} disabled={cancellingJob}
-                              className="text-[12px] text-red-500 hover:text-red-600 font-medium disabled:opacity-50">
-                              {cancellingJob ? "Cancelling..." : "Cancel job"}
-                            </button>
-                          </div>
-                          <button onClick={() => setManagingJob(null)} className="mt-2 text-[12px] text-[var(--text-dim)] hover:text-[var(--text)]">
-                            ← Close
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === "explore" && (() => {
-          const filtered = exploreJobs
-            .filter(j => {
-              const q = exploreSearch.toLowerCase();
-              if (q && !dom(j.app_url).toLowerCase().includes(q) && !(j.description || "").toLowerCase().includes(q) && !(j.app_type || "").toLowerCase().includes(q)) return false;
-              if (exploreFilter !== "All" && (j.app_type || "").toLowerCase() !== exploreFilter.toLowerCase()) return false;
-              return true;
-            })
-            .sort((a, b) => {
-              if (exploreSort === "Highest pay") return (b.price_per_tester_cents || 0) - (a.price_per_tester_cents || 0);
-              if (exploreSort === "Most spots") return (b.testers_count - b.accepted_count) - (a.testers_count - a.accepted_count);
-              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-            });
-          return (
+          {/* ═══ OVERVIEW ═══ */}
+          {tab === "overview" && (
             <div>
-              <h1 className="h text-xl font-bold text-[var(--text)] mb-6">Explore jobs</h1>
-              {/* Search + sort */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 relative">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  <input type="text" placeholder="Search jobs..." value={exploreSearch} onChange={e => setExploreSearch(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-black/[0.08] pl-10 pr-4 text-[13px] text-[var(--text)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-black/[0.15]" />
+              <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 24px" }}>
+                Welcome back, {tester.name.split(" ")[0]}
+              </h1>
+
+              {/* Payout banner */}
+              {connectStatus && !connectStatus.onboarded && (
+                <div style={{
+                  background: theme === "dark" ? "rgba(249,115,22,0.1)" : "#FFF7ED",
+                  border: `1px solid ${theme === "dark" ? "rgba(249,115,22,0.2)" : "#FDBA74"}`,
+                  borderRadius: 12, padding: "16px 20px", marginBottom: 24,
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap",
+                }}>
+                  <div>
+                    <p className="h" style={{ fontSize: 14, fontWeight: 600, color: theme === "dark" ? "#FB923C" : "#9A3412", margin: 0 }}>Set up payouts to get paid</p>
+                    <p style={{ fontSize: 12, color: theme === "dark" ? "rgba(251,146,60,0.7)" : "#C2410C", margin: "4px 0 0" }}>Connect your bank account to receive payments.</p>
+                  </div>
+                  <button onClick={setupPayouts} disabled={connectLoading} style={{
+                    padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer",
+                    background: "#F97316", color: "white", fontSize: 13, fontWeight: 600,
+                    opacity: connectLoading ? 0.5 : 1,
+                  }}>
+                    {connectLoading ? "Loading..." : "Set up"}
+                  </button>
                 </div>
-                <select value={exploreSort} onChange={e => setExploreSort(e.target.value)}
-                  className="h-10 rounded-xl border border-black/[0.08] px-3 text-[13px] text-[var(--text-muted)] bg-white focus:outline-none shrink-0">
-                  {SORT_OPTIONS.map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              {/* Filter chips */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {TYPE_FILTERS.map(f => (
-                  <button key={f} onClick={() => setExploreFilter(f)}
-                    className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${
-                      exploreFilter === f ? "bg-black text-white border-black" : "bg-white text-[var(--text-muted)] border-black/[0.08] hover:border-black/[0.15]"
-                    }`}>{f}</button>
+              )}
+
+              {/* Stat cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 32 }}>
+                {[
+                  { label: "Tests Completed", value: String(tester.tests_completed), accent: false },
+                  { label: "Total Earned", value: `$${earned.toFixed(2)}`, accent: true },
+                  { label: "Credit Balance", value: tester.credit_cents > 0 ? `$${(tester.credit_cents / 100).toFixed(2)}` : "$0.00", accent: false },
+                  { label: "Avg Rating", value: tester.avg_rating > 0 ? `${tester.avg_rating.toFixed(1)}/5` : "—", accent: false },
+                ].map(s => (
+                  <div key={s.label} style={{
+                    background: "var(--dash-card)", border: "1px solid var(--dash-border)",
+                    borderRadius: 12, padding: "20px",
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>{s.label}</p>
+                    <p className="h" style={{ fontSize: 24, fontWeight: 700, color: s.accent ? "#F97316" : "var(--dash-text)", margin: 0 }}>{s.value}</p>
+                  </div>
                 ))}
               </div>
-              {applyError && <div className="bg-red-50 border border-red-200 text-red-700 text-[13px] rounded-xl px-4 py-3 mb-4">{applyError}</div>}
-              {exploreLoading ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[1,2,3,4,5,6].map(i => (
-                    <div key={i} className="rounded-xl border border-black/[0.06] p-5 animate-pulse">
-                      <div className="h-4 bg-black/[0.04] rounded w-2/3 mb-2" /><div className="h-3 bg-black/[0.03] rounded w-1/3 mb-6" /><div className="h-3 bg-black/[0.03] rounded w-full" />
-                    </div>
+
+              {/* Charts row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 16px" }}>Activity (last 7 days)</p>
+                  <BarChart data={[2, 5, 3, 8, 4, 6, 1]} color="#F97316" />
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+                    {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => (
+                      <span key={d} style={{ fontSize: 10, color: "var(--dash-text-dim)" }}>{d}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 16px" }}>Earnings trend</p>
+                  <LineChart data={[0, 12, 8, 25, 18, 30, earned]} color="#10B981" />
+                </div>
+              </div>
+
+              {/* Quick actions */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
+                <button onClick={() => setTab("explore")} style={{
+                  background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12,
+                  padding: 24, textAlign: "left", cursor: "pointer", transition: "border-color 0.15s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#F97316"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--dash-border)"; }}
+                >
+                  <p className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 4px" }}>Explore jobs</p>
+                  <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: 0 }}>Find test jobs and start earning.</p>
+                </button>
+                <button onClick={() => setTab("posttest")} style={{
+                  background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12,
+                  padding: 24, textAlign: "left", cursor: "pointer", transition: "border-color 0.15s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#F97316"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--dash-border)"; }}
+                >
+                  <p className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 4px" }}>Post a test</p>
+                  <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: 0 }}>Get real humans to test your app.</p>
+                </button>
+              </div>
+
+              {/* Posted jobs */}
+              {postedJobs.length > 0 && (
+                <div>
+                  <h2 className="h" style={{ fontSize: 16, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 16px" }}>My posted jobs</h2>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {postedJobs.map(job => (
+                      <div key={job.id} style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+                          <div>
+                            <p className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>{dom(job.app_url)}</p>
+                            <p style={{ fontSize: 12, color: "var(--dash-text-dim)", margin: "4px 0 0" }}>{job.app_type} · Posted {new Date(job.created_at).toLocaleDateString("en-AU")}</p>
+                            {job.description && <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "8px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{job.description}</p>}
+                          </div>
+                          <span style={{
+                            flexShrink: 0, padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                            background: job.status === "paid" ? (theme === "dark" ? "rgba(34,197,94,0.1)" : "#F0FDF4") : (theme === "dark" ? "rgba(234,179,8,0.1)" : "#FFFBEB"),
+                            color: job.status === "paid" ? "#16A34A" : "#CA8A04",
+                          }}>
+                            {job.status === "paid" ? "Live" : job.status}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12, fontSize: 12, color: "var(--dash-text-dim)" }}>
+                          <span>{job.applications_count || 0} applications</span>
+                          <span>{job.accepted_count || 0}/{job.testers_count} accepted</span>
+                          <span>${((job.price_per_tester_cents || 0) / 100).toFixed(0)}/tester</span>
+                          {job.status === "paid" && (
+                            <button onClick={() => loadApplicants(job.id)}
+                              style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#F97316" }}>
+                              Manage →
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Applicant management */}
+                        {managingJob === job.id && (
+                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--dash-border)" }}>
+                            {applicantsLoading ? (
+                              <p style={{ fontSize: 13, color: "var(--dash-text-dim)" }}>Loading applicants...</p>
+                            ) : jobApplicants.length === 0 ? (
+                              <p style={{ fontSize: 13, color: "var(--dash-text-secondary)" }}>No applicants yet.</p>
+                            ) : (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Applicants ({jobApplicants.length})</p>
+                                {jobApplicants.map((a: { id: number; tester_id: number; name: string; email: string; location: string | null; country: string | null; bio: string | null; tests_completed: number; avg_rating: number; status: string; note: string | null; feedback: string | null; submitted_at: string | null; linkedin: string | null; portfolio: string | null; twitter: string | null; github: string | null; devices: string; interests: string; deadline_at: string | null; accepted_at: string | null }) => (
+                                  <div key={a.id} style={{ background: "var(--dash-bg)", borderRadius: 10, padding: 16 }}>
+                                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                        <div style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 14, fontWeight: 700, flexShrink: 0, backgroundColor: avatarColor(a.name) }}>
+                                          {a.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>{a.name}</p>
+                                          <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: "2px 0 0" }}>{a.location || a.country || "Unknown"} · {a.tests_completed} tests · {a.avg_rating > 0 ? `${a.avg_rating}/5` : "New"}</p>
+                                        </div>
+                                      </div>
+                                      <span style={{
+                                        flexShrink: 0, padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 600,
+                                        background: a.status === "accepted" ? "rgba(34,197,94,0.1)" : a.status === "rejected" ? "rgba(239,68,68,0.1)" : "rgba(234,179,8,0.1)",
+                                        color: a.status === "accepted" ? "#16A34A" : a.status === "rejected" ? "#EF4444" : "#CA8A04",
+                                      }}>{a.status}</span>
+                                    </div>
+                                    {a.bio && <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: "8px 0 0" }}>{a.bio}</p>}
+                                    {a.note && <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: "4px 0 0", fontStyle: "italic" }}>&quot;{a.note}&quot;</p>}
+                                    {a.status === "accepted" && a.deadline_at && (() => {
+                                      const expired = new Date(a.deadline_at) < new Date();
+                                      return <p style={{ fontSize: 11, marginTop: 6, fontWeight: 500, color: expired ? "#EF4444" : "#F97316" }}>{expired ? "Deadline passed" : `Due: ${new Date(a.deadline_at).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}`}</p>;
+                                    })()}
+                                    {a.feedback && (
+                                      <div style={{ marginTop: 8, padding: 12, background: "var(--dash-card)", borderRadius: 8, border: "1px solid var(--dash-border)" }}>
+                                        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", margin: "0 0 4px" }}>Feedback</p>
+                                        <p style={{ fontSize: 13, color: "var(--dash-text)", margin: 0 }}>{a.feedback}</p>
+                                      </div>
+                                    )}
+                                    {a.status === "pending" && (
+                                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                                        <button onClick={() => handleApplicant(job.id, a.id, "accept")} disabled={actionLoading === a.id}
+                                          style={{ padding: "6px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: "#16A34A", color: "white", fontSize: 12, fontWeight: 600, opacity: actionLoading === a.id ? 0.5 : 1 }}>
+                                          {actionLoading === a.id ? "..." : "Accept"}
+                                        </button>
+                                        <button onClick={() => handleApplicant(job.id, a.id, "deny")} disabled={actionLoading === a.id}
+                                          style={{ padding: "6px 16px", borderRadius: 8, border: "1px solid var(--dash-border)", cursor: "pointer", background: "transparent", color: "#EF4444", fontSize: 12, fontWeight: 600, opacity: actionLoading === a.id ? 0.5 : 1 }}>
+                                          {actionLoading === a.id ? "..." : "Deny"}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--dash-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                              <button onClick={() => cancelJob(job.id)} disabled={cancellingJob}
+                                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#EF4444", fontWeight: 500, opacity: cancellingJob ? 0.5 : 1 }}>
+                                {cancellingJob ? "Cancelling..." : "Cancel job"}
+                              </button>
+                              <button onClick={() => setManagingJob(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--dash-text-dim)" }}>Close</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══ EXPLORE ═══ */}
+          {tab === "explore" && (() => {
+            const filtered = exploreJobs
+              .filter(j => {
+                const q = exploreSearch.toLowerCase();
+                if (q && !dom(j.app_url).toLowerCase().includes(q) && !(j.description || "").toLowerCase().includes(q) && !(j.app_type || "").toLowerCase().includes(q)) return false;
+                if (exploreFilter !== "All" && (j.app_type || "").toLowerCase() !== exploreFilter.toLowerCase()) return false;
+                return true;
+              })
+              .sort((a, b) => {
+                if (exploreSort === "Highest pay") return (b.price_per_tester_cents || 0) - (a.price_per_tester_cents || 0);
+                if (exploreSort === "Most spots") return (b.testers_count - b.accepted_count) - (a.testers_count - a.accepted_count);
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+              });
+            return (
+              <div>
+                <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 24px" }}>Explore jobs</h1>
+                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--dash-text-dim)" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" placeholder="Search jobs..." value={exploreSearch} onChange={e => setExploreSearch(e.target.value)}
+                      style={{ width: "100%", height: 40, borderRadius: 8, border: "1px solid var(--dash-border)", paddingLeft: 36, paddingRight: 16, fontSize: 13, color: "var(--dash-text)", background: "var(--dash-input-bg)", outline: "none" }} />
+                  </div>
+                  <select value={exploreSort} onChange={e => setExploreSort(e.target.value)}
+                    style={{ height: 40, borderRadius: 8, border: "1px solid var(--dash-border)", padding: "0 12px", fontSize: 13, color: "var(--dash-text-secondary)", background: "var(--dash-input-bg)", outline: "none" }}>
+                    {SORT_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+                  {TYPE_FILTERS.map(f => (
+                    <button key={f} onClick={() => setExploreFilter(f)} style={{
+                      padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                      border: `1px solid ${exploreFilter === f ? "#F97316" : "var(--dash-border)"}`,
+                      background: exploreFilter === f ? (theme === "dark" ? "rgba(249,115,22,0.12)" : "#FFF7ED") : "transparent",
+                      color: exploreFilter === f ? "#F97316" : "var(--dash-text-secondary)",
+                    }}>{f}</button>
                   ))}
                 </div>
-              ) : filtered.length === 0 ? (
-                <div className="text-center py-20">
-                  <p className="text-[var(--text-muted)] text-[15px]">{exploreSearch || exploreFilter !== "All" ? "No jobs match your filters." : "No active test jobs right now."}</p>
-                  <p className="text-[13px] text-[var(--text-dim)] mt-1">Check back soon.</p>
+                {applyError && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#EF4444", fontSize: 13, borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>{applyError}</div>}
+                {exploreLoading ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+                    {[1,2,3,4,5,6].map(i => (
+                      <div key={i} style={{ borderRadius: 10, border: "1px solid var(--dash-border)", padding: 20, opacity: 0.5 }}>
+                        <div style={{ height: 16, background: "var(--dash-border)", borderRadius: 4, width: "60%", marginBottom: 8 }} />
+                        <div style={{ height: 12, background: "var(--dash-border)", borderRadius: 4, width: "40%" }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 0" }}>
+                    <p style={{ color: "var(--dash-text-secondary)", fontSize: 15 }}>No active test jobs right now.</p>
+                    <p style={{ fontSize: 13, color: "var(--dash-text-dim)", marginTop: 4 }}>Check back soon.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+                    {filtered.map(job => {
+                      const pay = (job.price_per_tester_cents || 0) / 100;
+                      const spots = job.testers_count - job.accepted_count;
+                      const hasApplied = appliedSet.has(job.id);
+                      return (
+                        <div key={job.id} style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 10, padding: 20, transition: "border-color 0.15s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(249,115,22,0.3)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--dash-border)"; }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                            <div>
+                              <p className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>{dom(job.app_url)}</p>
+                              {job.app_type && <span style={{ fontSize: 11, color: "var(--dash-text-dim)" }}>{job.app_type}</span>}
+                            </div>
+                            <p className="h" style={{ fontSize: 18, fontWeight: 700, color: "var(--dash-text)", margin: 0, flexShrink: 0 }}>${pay.toFixed(0)}</p>
+                          </div>
+                          {job.description && <p style={{ fontSize: 12, color: "var(--dash-text-dim)", margin: "0 0 12px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{job.description}</p>}
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 11, color: "var(--dash-text-dim)" }}>
+                            <span>{job.applications_count} applied</span>
+                            <span>{spots > 0 ? `${spots} spots` : "Full"}</span>
+                          </div>
+                          {hasApplied ? (
+                            <button disabled style={{ width: "100%", padding: "8px 0", borderRadius: 8, border: "1px solid var(--dash-border)", background: "transparent", fontSize: 12, fontWeight: 500, color: "var(--dash-text-dim)", cursor: "default" }}>Applied</button>
+                          ) : spots <= 0 ? (
+                            <button disabled style={{ width: "100%", padding: "8px 0", borderRadius: 8, border: "1px solid var(--dash-border)", background: "transparent", fontSize: 12, fontWeight: 500, color: "var(--dash-text-dim)", cursor: "default" }}>Full</button>
+                          ) : (
+                            <button onClick={() => applyToJob(job.id)} disabled={applying === job.id}
+                              style={{ width: "100%", padding: "8px 0", borderRadius: 8, border: "none", background: "var(--dash-text)", color: "var(--dash-bg)", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: applying === job.id ? 0.5 : 1 }}>
+                              {applying === job.id ? "Applying..." : "Apply"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ═══ MY JOBS ═══ */}
+          {tab === "myjobs" && (
+            <div>
+              <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 24px" }}>My Jobs</h1>
+              {myAppsLoading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {[1,2,3].map(i => <div key={i} style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 24, opacity: 0.5 }}><div style={{ height: 16, background: "var(--dash-border)", borderRadius: 4, width: "30%" }} /></div>)}
+                </div>
+              ) : myApps.length === 0 ? (
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: "48px 24px", textAlign: "center" }}>
+                  <p style={{ color: "var(--dash-text-secondary)" }}>No jobs yet.</p>
+                  <p style={{ fontSize: 13, color: "var(--dash-text-dim)", marginTop: 4 }}>
+                    <button onClick={() => setTab("explore")} style={{ background: "none", border: "none", color: "#F97316", cursor: "pointer", fontWeight: 500, fontSize: 13 }}>Explore jobs</button> and apply to start earning.
+                  </p>
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filtered.map(job => {
-                    const pay = (job.price_per_tester_cents || 0) / 100;
-                    const spots = job.testers_count - job.accepted_count;
-                    const hostname = dom(job.app_url);
-                    const hasApplied = appliedSet.has(job.id);
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {myApps.map(a => {
+                    const pay = (a.price_per_tester_cents || 0) / 100;
+                    const hostname = dom(a.app_url);
+                    const sc: Record<string, string> = { pending: "#CA8A04", accepted: "#2563EB", submitted: "#7C3AED", completed: "#16A34A", rejected: "#EF4444" };
                     return (
-                      <div key={job.id} className="rounded-xl border border-black/[0.06] p-5 hover:border-black/[0.12] hover:shadow-sm transition-all">
-                        <div className="flex items-start justify-between gap-2 mb-2">
+                      <div key={a.id} style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 24 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
                           <div>
-                            <h3 className="h text-[14px] font-semibold text-[var(--text)] line-clamp-1">{hostname}</h3>
-                            {job.app_type && <span className="text-[11px] text-[var(--text-dim)]">{job.app_type}</span>}
-                          </div>
-                          <p className="h text-[16px] font-bold text-[var(--text)] shrink-0">${pay.toFixed(0)}</p>
-                        </div>
-                        {job.description && <p className="text-[12px] text-[var(--text-dim)] line-clamp-2 mb-3">{job.description}</p>}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1">
-                            <div className="flex -space-x-1.5">
-                              {Array.from({ length: Math.min(job.applications_count, 3) }).map((_, i) => (
-                                <div key={i} className="w-5 h-5 rounded-full border-2 border-white text-[8px] font-bold text-white flex items-center justify-center"
-                                  style={{ backgroundColor: avatarColor(`${job.id}-${i}`) }} />
-                              ))}
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)" }}>{hostname}</span>
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, color: sc[a.status] || "#6B7280", background: `${sc[a.status] || "#6B7280"}15` }}>{a.status}</span>
+                              {a.app_type && <span style={{ fontSize: 11, color: "var(--dash-text-dim)" }}>{a.app_type}</span>}
                             </div>
-                            <span className="text-[11px] text-[var(--text-dim)] ml-1">{job.applications_count} applied</span>
+                            {a.job_description && <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", marginTop: 4 }}>{a.job_description}</p>}
                           </div>
-                          <span className="text-[11px] text-[var(--text-dim)]">{spots > 0 ? `${spots} spots` : "Full"}</span>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <p className="h" style={{ fontSize: 16, fontWeight: 700, color: "var(--dash-text)", margin: 0 }}>${pay.toFixed(0)}</p>
+                            {a.payout_cents > 0 && <p style={{ fontSize: 10, color: "#16A34A", margin: "2px 0 0" }}>Earned ${(a.payout_cents / 100).toFixed(2)}</p>}
+                          </div>
                         </div>
-                        {hasApplied ? (
-                          <button disabled className="w-full py-2 rounded-lg border border-black/[0.06] text-[12px] font-medium text-[var(--text-dim)]">Applied</button>
-                        ) : spots <= 0 ? (
-                          <button disabled className="w-full py-2 rounded-lg border border-black/[0.06] text-[12px] font-medium text-[var(--text-dim)]">Full</button>
-                        ) : (
-                          <button onClick={() => applyToJob(job.id)} disabled={applying === job.id}
-                            className="w-full py-2 rounded-lg bg-black text-white text-[12px] font-semibold hover:bg-black/90 transition-colors disabled:opacity-50">
-                            {applying === job.id ? "Applying..." : "Apply"}
+                        {a.status === "accepted" && !submitForm && (
+                          <button onClick={() => setSubmitForm({ id: a.id, feedback: "", recording: "" })}
+                            style={{ width: "100%", padding: "10px 0", borderRadius: 8, border: "none", background: "var(--dash-text)", color: "var(--dash-bg)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                            Submit test results
                           </button>
+                        )}
+                        {submitForm && submitForm.id === a.id && (
+                          <div style={{ marginTop: 12, paddingTop: 16, borderTop: "1px solid var(--dash-border)" }}>
+                            <div style={{ marginBottom: 12 }}>
+                              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--dash-text-secondary)", marginBottom: 6 }}>Your feedback *</label>
+                              <textarea style={{ width: "100%", borderRadius: 8, border: "1px solid var(--dash-border)", padding: 12, fontSize: 13, minHeight: 120, resize: "none", outline: "none", background: "var(--dash-input-bg)", color: "var(--dash-text)" }}
+                                placeholder="What worked, what was confusing, what broke?"
+                                value={submitForm.feedback}
+                                onChange={e => setSubmitForm({ ...submitForm, feedback: e.target.value })} />
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--dash-text-secondary)", marginBottom: 6 }}>Screen recording URL (optional)</label>
+                              <input style={{ width: "100%", borderRadius: 8, border: "1px solid var(--dash-border)", padding: "10px 12px", fontSize: 13, outline: "none", background: "var(--dash-input-bg)", color: "var(--dash-text)" }}
+                                placeholder="Loom, YouTube, or any video link"
+                                value={submitForm.recording}
+                                onChange={e => setSubmitForm({ ...submitForm, recording: e.target.value })} />
+                            </div>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button onClick={() => setSubmitForm(null)} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid var(--dash-border)", background: "transparent", fontSize: 13, fontWeight: 500, color: "var(--dash-text-secondary)", cursor: "pointer" }}>Cancel</button>
+                              <button onClick={submitResults} disabled={submitting || submitForm.feedback.length < 20}
+                                style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "var(--dash-text)", color: "var(--dash-bg)", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (submitting || submitForm.feedback.length < 20) ? 0.4 : 1 }}>
+                                {submitting ? "Submitting..." : "Submit & get paid"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {(a.status === "submitted" || a.status === "completed") && a.feedback && (
+                          <div style={{ marginTop: 12, background: "var(--dash-bg)", borderRadius: 8, padding: 12 }}>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", margin: "0 0 4px" }}>Your feedback</p>
+                            <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: 0 }}>{a.feedback}</p>
+                          </div>
+                        )}
+                        {a.status === "pending" && <p style={{ fontSize: 12, color: "var(--dash-text-dim)", marginTop: 8 }}>Waiting for review.</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══ POST A TEST ═══ */}
+          {tab === "posttest" && (
+            <div>
+              <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 8px" }}>Post a Test</h1>
+              <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "0 0 24px" }}>Get real humans to test your app. Set your budget, define tasks, and get results.</p>
+              <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: "24px 28px" }}>
+                <PostTestForm />
+              </div>
+            </div>
+          )}
+
+          {/* ═══ BOOKINGS ═══ */}
+          {tab === "bookings" && (
+            <div>
+              <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 24px" }}>Bookings</h1>
+              {bookingsLoading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {[1,2,3].map(i => <div key={i} style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 24, opacity: 0.5 }}><div style={{ height: 16, background: "var(--dash-border)", borderRadius: 4, width: "30%" }} /></div>)}
+                </div>
+              ) : bookings.length === 0 ? (
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: "48px 24px", textAlign: "center" }}>
+                  <p style={{ color: "var(--dash-text-secondary)", fontSize: 15 }}>No bookings yet.</p>
+                  <p style={{ fontSize: 13, color: "var(--dash-text-dim)", marginTop: 4 }}>Scheduled test sessions will appear here.</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {bookings.map(b => {
+                    const hostname = dom(b.app_url);
+                    const sc: Record<string, { color: string; label: string }> = {
+                      pending: { color: "#CA8A04", label: "Pending" }, confirmed: { color: "#2563EB", label: "Confirmed" },
+                      completed: { color: "#16A34A", label: "Completed" }, cancelled: { color: "#EF4444", label: "Cancelled" },
+                      no_show: { color: "#6B7280", label: "No Show" },
+                    };
+                    const st = sc[b.status] || sc.pending;
+                    const dateStr = new Date(b.scheduled_date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+                    const isUpcoming = b.status === "pending" || b.status === "confirmed";
+                    return (
+                      <div key={b.id} style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 24, opacity: isUpcoming ? 1 : 0.6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <span className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)" }}>{hostname}</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, color: st.color, background: `${st.color}15` }}>{st.label}</span>
+                        </div>
+                        <div style={{ background: "var(--dash-bg)", borderRadius: 8, padding: 12, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+                          <div><span style={{ fontSize: 11, color: "var(--dash-text-dim)" }}>Date</span><p style={{ fontSize: 13, fontWeight: 500, color: "var(--dash-text)", margin: "4px 0 0" }}>{dateStr}</p></div>
+                          <div><span style={{ fontSize: 11, color: "var(--dash-text-dim)" }}>Time</span><p style={{ fontSize: 13, fontWeight: 500, color: "var(--dash-text)", margin: "4px 0 0" }}>{b.scheduled_time}</p></div>
+                          <div><span style={{ fontSize: 11, color: "var(--dash-text-dim)" }}>Duration</span><p style={{ fontSize: 13, fontWeight: 500, color: "var(--dash-text)", margin: "4px 0 0" }}>{b.duration_minutes}m</p></div>
+                        </div>
+                        {b.tester_name && <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", marginBottom: 12 }}>Tester: <span style={{ fontWeight: 500, color: "var(--dash-text)" }}>{b.tester_name}</span></p>}
+                        {b.status === "pending" && b.tester_id && (
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button onClick={() => handleBookingAction(b.id, "confirm")} disabled={bookingAction === b.id}
+                              style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "#2563EB", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: bookingAction === b.id ? 0.5 : 1 }}>
+                              {bookingAction === b.id ? "..." : "Confirm"}
+                            </button>
+                            <button onClick={() => handleBookingAction(b.id, "cancel")} disabled={bookingAction === b.id}
+                              style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid var(--dash-border)", background: "transparent", fontSize: 13, fontWeight: 500, color: "var(--dash-text-secondary)", cursor: "pointer" }}>
+                              Decline
+                            </button>
+                          </div>
                         )}
                       </div>
                     );
@@ -628,557 +924,222 @@ function Dashboard() {
                 </div>
               )}
             </div>
-          );
-        })()}
+          )}
 
-        {tab === "myjobs" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-6">My Jobs</h1>
-            {myAppsLoading ? (
-              <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-black/[0.04] p-6 animate-pulse"><div className="h-4 bg-black/[0.03] rounded w-1/3" /></div>)}</div>
-            ) : myApps.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-black/[0.04] p-10 text-center">
-                <p className="text-[var(--text-muted)]">No jobs yet.</p>
-                <p className="text-[13px] text-[var(--text-dim)] mt-1"><Link href="/explore" className="text-[var(--accent)] hover:underline">Explore jobs</Link> and apply to start earning.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {myApps.map(a => {
-                  const pay = (a.price_per_tester_cents || 0) / 100;
-                  const hostname = (() => { try { return new URL(a.app_url).hostname.replace("www.", ""); } catch { return a.app_url; } })();
-                  const statusColors: Record<string, string> = {
-                    pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-                    accepted: "bg-blue-50 text-blue-700 border-blue-200",
-                    submitted: "bg-purple-50 text-purple-700 border-purple-200",
-                    completed: "bg-green-50 text-green-700 border-green-200",
-                    rejected: "bg-red-50 text-red-700 border-red-200",
-                  };
-                  return (
-                    <div key={a.id} className="bg-white rounded-2xl border border-black/[0.04] p-6">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="h text-[14px] font-semibold text-[var(--text)]">{hostname}</h3>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${statusColors[a.status] || "bg-gray-50 text-gray-500 border-gray-200"}`}>{a.status}</span>
-                            {a.app_type ? <span className="text-[11px] text-[var(--text-dim)]">{a.app_type}</span> : null}
-                          </div>
-                          {a.job_description ? <p className="text-[12px] text-[var(--text-muted)] mt-1 line-clamp-2">{a.job_description}</p> : null}
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="h text-[16px] font-bold">${pay.toFixed(0)}</p>
-                          {a.payout_cents > 0 ? <p className="text-[10px] text-green-600">Earned ${(a.payout_cents / 100).toFixed(2)}</p> : null}
-                        </div>
-                      </div>
-
-                      {/* Accepted = show submit button */}
-                      {a.status === "accepted" && !submitForm && (
-                        <button onClick={() => setSubmitForm({ id: a.id, feedback: "", recording: "" })}
-                          className="w-full py-2.5 rounded-xl bg-black text-white text-[13px] font-semibold hover:bg-black/90 transition-colors">
-                          Submit test results
-                        </button>
-                      )}
-
-                      {/* Submit form inline */}
-                      {submitForm && submitForm.id === a.id && (
-                        <div className="mt-3 space-y-3 border-t border-black/[0.04] pt-4">
-                          <div>
-                            <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1.5">Your feedback *</label>
-                            <textarea className="w-full rounded-xl border border-black/[0.08] p-3 text-[13px] min-h-[120px] resize-none focus:outline-none focus:border-black/[0.15]"
-                              placeholder="What worked, what was confusing, what broke? Be specific — mention exact pages, buttons, flows..."
-                              value={submitForm.feedback}
-                              onChange={e => setSubmitForm({ ...submitForm, feedback: e.target.value })} />
-                          </div>
-                          <div>
-                            <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1.5">Screen recording URL (optional)</label>
-                            <input className="w-full rounded-xl border border-black/[0.08] px-3 py-2.5 text-[13px] focus:outline-none focus:border-black/[0.15]"
-                              placeholder="Loom, YouTube, or any video link"
-                              value={submitForm.recording}
-                              onChange={e => setSubmitForm({ ...submitForm, recording: e.target.value })} />
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => setSubmitForm(null)} className="flex-1 py-2.5 rounded-xl border border-black/[0.08] text-[13px] font-medium text-[var(--text-muted)] hover:bg-black/[0.02] transition-colors">Cancel</button>
-                            <button onClick={submitResults} disabled={submitting || submitForm.feedback.length < 20}
-                              className="flex-1 py-2.5 rounded-xl bg-black text-white text-[13px] font-semibold hover:bg-black/90 transition-colors disabled:opacity-40">
-                              {submitting ? "Submitting..." : "Submit & get paid"}
-                            </button>
-                          </div>
-                          <p className="text-[11px] text-[var(--text-dim)] text-center">Payment is automatic once you submit. Min 20 characters.</p>
-                        </div>
-                      )}
-
-                      {/* Already submitted */}
-                      {(a.status === "submitted" || a.status === "completed") && a.feedback ? (
-                        <div className="mt-3 bg-black/[0.02] rounded-xl p-3">
-                          <p className="text-[11px] font-medium text-[var(--text-dim)] mb-1">Your feedback</p>
-                          <p className="text-[12px] text-[var(--text-muted)] line-clamp-3">{a.feedback}</p>
-                        </div>
-                      ) : null}
-
-                      {a.status === "pending" && (
-                        <p className="text-[12px] text-[var(--text-dim)] mt-2">Waiting for review. You&apos;ll be notified when accepted.</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === "bookings" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-6">Bookings</h1>
-            {bookingsLoading ? (
-              <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-black/[0.04] p-6 animate-pulse"><div className="h-4 bg-black/[0.03] rounded w-1/3" /></div>)}</div>
-            ) : bookings.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-black/[0.04] p-10 text-center">
-                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          {/* ═══ PAYOUTS ═══ */}
+          {tab === "payouts" && (
+            <div>
+              <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 24px" }}>Payouts</h1>
+              {connectStatus && !connectStatus.onboarded ? (
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: "48px 24px", textAlign: "center" }}>
+                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(249,115,22,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                  </div>
+                  <h2 className="h" style={{ fontSize: 16, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 8px" }}>Set up your bank account</h2>
+                  <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "0 0 24px", maxWidth: 360, marginLeft: "auto", marginRight: "auto" }}>Connect your bank through Stripe to receive automatic payments.</p>
+                  <button onClick={setupPayouts} disabled={connectLoading} style={{ padding: "12px 28px", borderRadius: 8, border: "none", background: "var(--dash-text)", color: "var(--dash-bg)", fontSize: 14, fontWeight: 600, cursor: "pointer", opacity: connectLoading ? 0.5 : 1 }}>
+                    {connectLoading ? "Setting up..." : "Connect bank account"}
+                  </button>
                 </div>
-                <p className="text-[var(--text-muted)]">No bookings yet.</p>
-                <p className="text-[13px] text-[var(--text-dim)] mt-1">Scheduled test sessions will appear here.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {bookings.map(b => {
-                  const hostname = dom(b.app_url);
-                  const statusConfig: Record<string, { bg: string; text: string; border: string; label: string }> = {
-                    pending: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200", label: "Pending" },
-                    confirmed: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", label: "Confirmed" },
-                    completed: { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", label: "Completed" },
-                    cancelled: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", label: "Cancelled" },
-                    no_show: { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200", label: "No Show" },
-                  };
-                  const st = statusConfig[b.status] || statusConfig.pending;
-                  const dateStr = new Date(b.scheduled_date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
-                  const isUpcoming = b.status === "pending" || b.status === "confirmed";
-
-                  return (
-                    <div key={b.id} className={`bg-white rounded-2xl border p-6 ${isUpcoming ? "border-black/[0.06]" : "border-black/[0.04] opacity-75"}`}>
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="h text-[14px] font-semibold text-[var(--text)]">{hostname}</h3>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${st.bg} ${st.text} ${st.border}`}>{st.label}</span>
-                            {b.app_type && <span className="text-[11px] text-[var(--text-dim)]">{b.app_type}</span>}
-                          </div>
-                          {b.job_description && <p className="text-[12px] text-[var(--text-muted)] mt-1 line-clamp-2">{b.job_description}</p>}
-                        </div>
-                      </div>
-
-                      {/* Schedule details */}
-                      <div className="bg-[var(--bg-2)] rounded-xl p-3 mb-3">
-                        <div className="grid grid-cols-3 gap-3 text-[12px]">
-                          <div>
-                            <span className="text-[var(--text-dim)]">Date</span>
-                            <p className="font-medium text-[var(--text)] mt-0.5">{dateStr}</p>
-                          </div>
-                          <div>
-                            <span className="text-[var(--text-dim)]">Time</span>
-                            <p className="font-medium text-[var(--text)] mt-0.5">{b.scheduled_time}</p>
-                          </div>
-                          <div>
-                            <span className="text-[var(--text-dim)]">Duration</span>
-                            <p className="font-medium text-[var(--text)] mt-0.5">{b.duration_minutes}m</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tester info (shown to businesses) */}
-                      {b.tester_name && (
-                        <p className="text-[12px] text-[var(--text-muted)] mb-3">Tester: <span className="font-medium text-[var(--text)]">{b.tester_name}</span></p>
-                      )}
-
-                      {/* App ready badge */}
-                      {isUpcoming && b.app_ready && (
-                        <div className="flex items-center gap-1.5 mb-3">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                          <span className="text-[11px] text-green-600 font-medium">App marked as ready</span>
-                        </div>
-                      )}
-                      {isUpcoming && !b.app_ready && b.app_ready_deadline && (
-                        <p className="text-[11px] text-orange-600 mb-3">App must be ready by {new Date(b.app_ready_deadline).toLocaleString("en-AU", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
-                      )}
-
-                      {/* Tester actions */}
-                      {b.status === "pending" && b.tester_id && (
-                        <div className="flex gap-2">
-                          <button onClick={() => handleBookingAction(b.id, "confirm")} disabled={bookingAction === b.id}
-                            className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-[13px] font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50">
-                            {bookingAction === b.id ? "..." : "Confirm"}
-                          </button>
-                          <button onClick={() => handleBookingAction(b.id, "cancel")} disabled={bookingAction === b.id}
-                            className="flex-1 py-2.5 rounded-xl border border-black/[0.08] text-[13px] font-medium text-[var(--text-muted)] hover:bg-black/[0.02] transition-colors disabled:opacity-50">
-                            Decline
-                          </button>
-                        </div>
-                      )}
-
-                      {b.notes && (
-                        <div className="mt-3 bg-black/[0.02] rounded-xl p-3">
-                          <p className="text-[11px] font-medium text-[var(--text-dim)] mb-1">Notes</p>
-                          <p className="text-[12px] text-[var(--text-muted)]">{b.notes}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === "profile" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-6">Your profile</h1>
-
-            <div className="bg-white rounded-2xl border border-black/[0.04] p-6 md:p-8">
-              {/* Header */}
-              <div className="flex items-center gap-4 mb-8 pb-6 border-b border-black/[0.04]">
-                <div className="w-16 h-16 rounded-full grad-warm-bg flex items-center justify-center text-white text-[24px] font-bold">
-                  {tester.name.charAt(0).toUpperCase()}
-                </div>
+              ) : (
                 <div>
-                  <h2 className="h text-lg font-bold text-[var(--text)]">{tester.name}</h2>
-                  <p className="text-[13px] text-[var(--text-muted)]">{tester.email}</p>
-                  {tester.location && <p className="text-[12px] text-[var(--text-dim)]">{tester.location}</p>}
+                  <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 12, padding: "16px 20px", marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#16A34A", margin: 0 }}>Payouts active</p>
+                      <p style={{ fontSize: 11, color: "#16A34A", opacity: 0.7, margin: "2px 0 0" }}>Payments arrive automatically after approval.</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+                    <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Total Earned</p>
+                      <p className="h" style={{ fontSize: 24, fontWeight: 700, color: "#F97316", margin: 0 }}>${earned.toFixed(2)}</p>
+                    </div>
+                    <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Tests Completed</p>
+                      <p className="h" style={{ fontSize: 24, fontWeight: 700, color: "var(--dash-text)", margin: 0 }}>{tester.tests_completed}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
+          )}
 
-              {/* Details grid */}
-              <div className="grid sm:grid-cols-2 gap-6">
-                {tester.age_range && (
+          {/* ═══ PROFILE ═══ */}
+          {tab === "profile" && (
+            <div>
+              <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 24px" }}>Profile</h1>
+              <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: "28px 32px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28, paddingBottom: 24, borderBottom: "1px solid var(--dash-border)" }}>
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #F97316, #F59E0B)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 24, fontWeight: 700 }}>
+                    {tester.name.charAt(0).toUpperCase()}
+                  </div>
                   <div>
-                    <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-wider mb-1">Age Range</p>
-                    <p className="text-[14px] text-[var(--text)]">{tester.age_range}</p>
+                    <h2 className="h" style={{ fontSize: 18, fontWeight: 700, color: "var(--dash-text)", margin: 0 }}>{tester.name}</h2>
+                    <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "4px 0 0" }}>{tester.email}</p>
+                    <p style={{ fontSize: 12, color: "var(--dash-text-dim)", margin: "2px 0 0" }}>Member since {memberSince}</p>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                  {tester.age_range && (
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" }}>Age Range</p>
+                      <p style={{ fontSize: 14, color: "var(--dash-text)", margin: 0 }}>{tester.age_range}</p>
+                    </div>
+                  )}
+                  {tester.location && (
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" }}>Location</p>
+                      <p style={{ fontSize: 14, color: "var(--dash-text)", margin: 0 }}>{tester.location}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Tech Comfort</p>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[1,2,3,4,5].map(n => (
+                        <div key={n} style={{
+                          width: 24, height: 24, borderRadius: 4, fontSize: 11, fontWeight: 700,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          background: n <= tester.tech_comfort ? "linear-gradient(135deg, #F97316, #F59E0B)" : "var(--dash-hover)",
+                          color: n <= tester.tech_comfort ? "white" : "var(--dash-text-dim)",
+                        }}>{n}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {devices.length > 0 && (
+                  <div style={{ marginTop: 24 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Devices</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {devices.map((d: string) => <span key={d} style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, background: "var(--dash-hover)", color: "var(--dash-text-secondary)", fontWeight: 500 }}>{d}</span>)}
+                    </div>
                   </div>
                 )}
-                <div>
-                  <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-wider mb-1">Tech Comfort</p>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map(n => (
-                      <div key={n} className={`w-6 h-6 rounded-md text-[11px] font-bold flex items-center justify-center ${
-                        n <= tester.tech_comfort ? "grad-warm-bg text-white" : "bg-black/[0.03] text-[var(--text-dim)]"
-                      }`}>{n}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Devices */}
-              {devices.length > 0 && (
-                <div className="mt-6">
-                  <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-wider mb-2">Devices</p>
-                  <div className="flex flex-wrap gap-2">
-                    {devices.map((d: string) => (
-                      <span key={d} className="px-3 py-1 rounded-full text-[12px] bg-black/[0.03] text-[var(--text-muted)] font-medium">{d}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Interests */}
-              {interests.length > 0 && (
-                <div className="mt-6">
-                  <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-wider mb-2">Interests</p>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.map((i: string) => (
-                      <span key={i} className="px-3 py-1 rounded-full text-[12px] bg-orange-50 text-orange-700 border border-orange-100 font-medium">{i}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Bio */}
-              {tester.bio && (
-                <div className="mt-6">
-                  <p className="text-[11px] font-semibold text-[var(--text-dim)] uppercase tracking-wider mb-1">About</p>
-                  <p className="text-[14px] text-[var(--text-muted)] leading-relaxed">{tester.bio}</p>
-                </div>
-              )}
-
-              {/* Sign out */}
-              <div className="mt-8 pt-6 border-t border-black/[0.04]">
-                <button onClick={async () => {
-                  await fetch("/api/auth/logout", { method: "POST" });
-                  window.location.href = "/";
-                }} className="text-[13px] text-red-500 hover:text-red-600 font-medium transition-colors">
-                  Sign out
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === "payouts" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-6">Payouts</h1>
-
-            {connectStatus && !connectStatus.onboarded ? (
-              <div className="bg-white rounded-2xl border border-black/[0.04] p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h2 className="h text-[16px] font-bold text-[var(--text)] mb-2">Set up your bank account</h2>
-                <p className="text-[13px] text-[var(--text-muted)] mb-6 max-w-sm mx-auto">
-                  Connect your bank account through Stripe to receive automatic payments when you complete test jobs.
-                </p>
-                <button onClick={setupPayouts} disabled={connectLoading}
-                  className="px-6 py-3 rounded-xl bg-black text-white text-[14px] font-semibold hover:bg-black/90 transition-colors disabled:opacity-50">
-                  {connectLoading ? "Setting up..." : "Connect bank account"}
-                </button>
-                <p className="text-[11px] text-[var(--text-dim)] mt-4">Powered by Stripe. Your details are secure.</p>
-              </div>
-            ) : (
-              <div>
-                <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-6 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-green-800">Payouts active</p>
-                    <p className="text-[11px] text-green-600">Your bank account is connected. Payments arrive automatically.</p>
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                  <div className="bg-white rounded-2xl border border-black/[0.04] p-5">
-                    <p className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider mb-1 font-medium">Total Earned</p>
-                    <p className="h text-xl font-bold text-[var(--accent)]">${earned.toFixed(2)}</p>
-                  </div>
-                  <div className="bg-white rounded-2xl border border-black/[0.04] p-5">
-                    <p className="text-[11px] text-[var(--text-dim)] uppercase tracking-wider mb-1 font-medium">Tests Completed</p>
-                    <p className="h text-xl font-bold text-[var(--text)]">{tester.tests_completed}</p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-black/[0.04] p-6">
-                  <p className="text-[13px] text-[var(--text-muted)]">Detailed payout history coming soon.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        {/* ═══ POST A TEST ═══ */}
-        {tab === "posttest" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-2">Post a Test</h1>
-            <p className="text-[13px] text-[var(--text-muted)] mb-6">Get real humans to test your app. Set your budget, define tasks, and get results.</p>
-
-            <div className="bg-white rounded-2xl border border-black/[0.04] p-6 sm:p-8">
-              <PostTestForm />
-            </div>
-          </div>
-        )}
-
-        {/* ═══ HOW IT WORKS ═══ */}
-        {tab === "howit" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-6">How it Works</h1>
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl border border-black/[0.04] p-6 sm:p-8">
-                <div className="h-1 grad-warm-bg rounded-full mb-6 w-full" />
-                <h2 className="h text-[15px] font-bold text-[var(--accent)] uppercase tracking-wider mb-6">For Businesses</h2>
-                <div className="space-y-5">
-                  {[
-                    { n: "01", t: "Post your job", d: "Describe your app, paste the URL, set the tasks testers need to complete, and define a time limit." },
-                    { n: "02", t: "Set your budget", d: "Choose how many testers and how much you'll pay each one. Minimum $5/tester, no ceiling." },
-                    { n: "03", t: "Testers apply & test", d: "Matched testers apply to your job. They use your app, record their screen, and note every friction point." },
-                    { n: "04", t: "Review & approve", d: "You review each submission. Accept good work (tester gets paid), reject lazy submissions." },
-                  ].map(s => (
-                    <div key={s.n} className="flex gap-3">
-                      <span className="h text-[12px] font-bold text-[var(--text-dim)] mt-0.5 shrink-0">{s.n}</span>
-                      <div>
-                        <h4 className="h text-[13px] font-semibold text-[var(--text)] mb-0.5">{s.t}</h4>
-                        <p className="text-[12px] text-[var(--text-muted)] leading-[1.6]">{s.d}</p>
-                      </div>
+                {interests.length > 0 && (
+                  <div style={{ marginTop: 24 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" }}>Interests</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {interests.map((i: string) => <span key={i} style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, background: "rgba(249,115,22,0.08)", color: "#F97316", border: "1px solid rgba(249,115,22,0.15)", fontWeight: 500 }}>{i}</span>)}
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-black/[0.04] p-6 sm:p-8">
-                <div className="h-1 bg-gradient-to-r from-red-400 to-orange-400 rounded-full mb-6 w-full" />
-                <h2 className="h text-[15px] font-bold text-[#EF4444] uppercase tracking-wider mb-6">For Testers</h2>
-                <div className="space-y-5">
-                  {[
-                    { n: "01", t: "Create your profile", d: "Sign up with your devices, interests, and experience. Takes 60 seconds." },
-                    { n: "02", t: "Browse & apply", d: "Find jobs that match your profile. Filter by budget, app type, or time limit." },
-                    { n: "03", t: "Complete the tasks", d: "Use the app for the specified time. Record your screen, note bugs, and log every friction point." },
-                    { n: "04", t: "Get paid", d: "Business approves your work → money hits your bank via Stripe. 80% goes to you." },
-                  ].map(s => (
-                    <div key={s.n} className="flex gap-3">
-                      <span className="h text-[12px] font-bold text-[var(--text-dim)] mt-0.5 shrink-0">{s.n}</span>
-                      <div>
-                        <h4 className="h text-[13px] font-semibold text-[var(--text)] mb-0.5">{s.t}</h4>
-                        <p className="text-[12px] text-[var(--text-muted)] leading-[1.6]">{s.d}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-black/[0.04] p-6 mt-6">
-              <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-3">What you deliver as a tester</h3>
-              <div className="grid sm:grid-cols-4 gap-4">
-                {[
-                  { t: "Screen recordings", d: "Full session with audio commentary" },
-                  { t: "Bug reports", d: "Steps to reproduce, severity, screenshots" },
-                  { t: "Friction notes", d: "What confused you, what felt off" },
-                  { t: "Flinch score", d: "Overall usability rating 0-100" },
-                ].map(d => (
-                  <div key={d.t} className="bg-[var(--bg-2)] rounded-xl p-4">
-                    <p className="h text-[12px] font-semibold text-[var(--text)] mb-1">{d.t}</p>
-                    <p className="text-[11px] text-[var(--text-muted)]">{d.d}</p>
                   </div>
-                ))}
+                )}
+                {tester.bio && (
+                  <div style={{ marginTop: 24 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" }}>About</p>
+                    <p style={{ fontSize: 14, color: "var(--dash-text-secondary)", lineHeight: 1.6, margin: 0 }}>{tester.bio}</p>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ═══ PRICING ═══ */}
-        {tab === "pricing" && (
-          <div>
-            <h1 className="h text-xl font-bold text-[var(--text)] mb-2">Pricing</h1>
-            <p className="text-[13px] text-[var(--text-muted)] mb-6">No subscriptions, no tiers. You set the price per tester and the tasks they must complete.</p>
-
-            <div className="bg-[var(--dark)] rounded-2xl p-6 sm:p-8 text-center mb-6">
-              <p className="h text-xl sm:text-2xl font-bold text-white">
-                Testers <span className="text-orange-400">×</span> Your price <span className="text-orange-400">=</span> Total
-              </p>
-              <p className="text-[13px] text-white/40 mt-2">$5 minimum per tester. No platform fee. No surprises.</p>
-            </div>
-
-            <div className="grid sm:grid-cols-3 gap-4 mb-6">
-              {[
-                { title: "Quick check", testers: 2, price: 5, tasks: "Sign up + report friction", time: "15 min", total: 10 },
-                { title: "Full audit", testers: 5, price: 12, tasks: "Complete onboarding, log every flinch", time: "30 min", total: 60, pop: true },
-                { title: "Deep dive", testers: 10, price: 20, tasks: "3-day usage, daily friction logs", time: "3 days", total: 200 },
-              ].map(ex => (
-                <div key={ex.title} className={`bg-white rounded-2xl border p-5 ${ex.pop ? "border-[var(--accent)] ring-1 ring-orange-100" : "border-black/[0.04]"}`}>
-                  {ex.pop && <span className="h text-[10px] font-bold text-[var(--accent)] uppercase tracking-wider">Most common</span>}
-                  <p className="h text-[14px] font-semibold text-[var(--text)] mb-3 mt-1">{ex.title}</p>
-                  <div className="space-y-2 text-[13px] mb-3">
-                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">Testers</span><span className="font-medium text-[var(--text)]">{ex.testers}</span></div>
-                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">Per tester</span><span className="font-medium text-[var(--text)]">${ex.price}</span></div>
-                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">Time limit</span><span className="font-medium text-[var(--text)]">{ex.time}</span></div>
+          {/* ═══ SETTINGS ═══ */}
+          {tab === "settings" && (
+            <div>
+              <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 24px" }}>Settings</h1>
+              <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: "28px 32px" }}>
+                <div style={{ marginBottom: 24 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 4px" }}>Appearance</p>
+                  <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "0 0 12px" }}>Choose your preferred theme.</p>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    {(["light", "dark"] as const).map(t => (
+                      <button key={t} onClick={() => { localStorage.setItem("dash-theme", t); document.documentElement.setAttribute("data-theme", t); window.location.reload(); }}
+                        style={{
+                          padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer",
+                          border: `2px solid ${theme === t ? "#F97316" : "var(--dash-border)"}`,
+                          background: theme === t ? "rgba(249,115,22,0.08)" : "transparent",
+                          color: theme === t ? "#F97316" : "var(--dash-text-secondary)",
+                          textTransform: "capitalize",
+                        }}>
+                        {t}
+                      </button>
+                    ))}
                   </div>
-                  <div className="border-t border-black/[0.04] pt-3">
-                    <div className="flex justify-between text-[14px]"><span className="text-[var(--text-muted)]">Total</span><span className="h font-bold text-[var(--text)]">${ex.total}</span></div>
-                  </div>
-                  <p className="text-[11px] text-[var(--text-dim)] mt-3">{ex.tasks}</p>
                 </div>
-              ))}
-            </div>
-
-            <div className="bg-white rounded-2xl border border-black/[0.04] p-6">
-              <h3 className="h text-[14px] font-semibold text-[var(--text)] mb-4">Tester earnings breakdown</h3>
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div className="bg-[var(--bg-2)] rounded-xl p-4 text-center">
-                  <p className="h text-2xl font-bold text-[var(--text)]">80%</p>
-                  <p className="text-[12px] text-[var(--text-muted)] mt-1">Goes to you</p>
-                </div>
-                <div className="bg-[var(--bg-2)] rounded-xl p-4 text-center">
-                  <p className="h text-2xl font-bold text-[var(--text-dim)]">20%</p>
-                  <p className="text-[12px] text-[var(--text-muted)] mt-1">Platform fee</p>
-                </div>
-                <div className="bg-[var(--bg-2)] rounded-xl p-4 text-center">
-                  <p className="h text-2xl font-bold text-[var(--accent)]">Same day</p>
-                  <p className="text-[12px] text-[var(--text-muted)] mt-1">Payout speed</p>
+                <div style={{ paddingTop: 24, borderTop: "1px solid var(--dash-border)" }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 4px" }}>Account</p>
+                  <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "0 0 12px" }}>Manage your account settings.</p>
+                  <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/"; }}
+                    style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "rgba(239,68,68,0.1)", color: "#EF4444", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    Sign out
+                  </button>
                 </div>
               </div>
             </div>
+          )}
 
-            <div className="mt-6 text-center">
-              <button onClick={() => setTab("posttest")} className="px-6 py-3 rounded-xl bg-black text-white text-[14px] font-semibold hover:bg-black/90 transition-colors">
-                Post a test job
-              </button>
-            </div>
-          </div>
-        )}
-        {/* ═══ API KEYS ═══ */}
-        {tab === "api" && <ApiKeysTab />}
+          {/* ═══ API KEYS ═══ */}
+          {tab === "api" && <ApiKeysTab theme={theme} />}
+        </div>
       </main>
+
+      {/* ═══ RESPONSIVE STYLES ═══ */}
+      <style>{`
+        @media (max-width: 768px) {
+          .sidebar-aside { transform: translateX(-100%) !important; }
+          .sidebar-aside[style*="translateX(0)"] { transform: translateX(0) !important; }
+          .sidebar-close { display: block !important; }
+          .dash-main { margin-left: 0 !important; }
+          .dash-topbar { display: flex !important; }
+        }
+        @media (max-width: 640px) {
+          .dash-main > div { padding: 20px 16px 40px !important; }
+        }
+      `}</style>
     </div>
   );
 }
 
-function ApiKeysTab() {
+/* ═══════════════════════════════════════════════
+   API KEYS TAB
+   ═══════════════════════════════════════════════ */
+
+function ApiKeysTab({ theme }: { theme: string }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [keys, setKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [keyName, setKeyName] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [credits, setCredits] = useState<any>(null);
   const [buyingPack, setBuyingPack] = useState("");
 
-  const fetchKeys = async () => {
-    const res = await fetch("/api/v1/keys");
-    const data = await res.json();
-    setKeys(data.keys || []);
-    setLoading(false);
-  };
-
-  const fetchCredits = async () => {
-    const res = await fetch("/api/v1/credits");
-    const data = await res.json();
-    setCredits(data);
-  };
-
-  const buyCredits = async (packId: string) => {
-    setBuyingPack(packId);
-    const res = await fetch("/api/v1/credits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pack_id: packId }),
-    });
-    const data = await res.json();
-    if (data.checkout_url) window.location.href = data.checkout_url;
-    setBuyingPack("");
-  };
-
+  const fetchKeys = async () => { const r = await fetch("/api/v1/keys"); const d = await r.json(); setKeys(d.keys || []); setLoading(false); };
+  const fetchCredits = async () => { const r = await fetch("/api/v1/credits"); const d = await r.json(); setCredits(d); };
   useEffect(() => { fetchKeys(); fetchCredits(); }, []);
 
   const createKey = async () => {
     setCreating(true);
-    const res = await fetch("/api/v1/keys", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: keyName || "default" }),
-    });
-    const data = await res.json();
-    if (data.key) {
-      setNewKey(data.key);
-      setKeyName("");
-      fetchKeys();
-    }
+    const r = await fetch("/api/v1/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: keyName || "default" }) });
+    const d = await r.json();
+    if (d.key) { setNewKey(d.key); setKeyName(""); fetchKeys(); }
     setCreating(false);
   };
 
   const revokeKey = async (id: number) => {
-    if (!confirm("Revoke this key? It will stop working immediately.")) return;
-    await fetch("/api/v1/keys", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key_id: id }),
-    });
+    if (!confirm("Revoke this key?")) return;
+    await fetch("/api/v1/keys", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key_id: id }) });
     fetchKeys();
+  };
+
+  const buyCredits = async (packId: string) => {
+    setBuyingPack(packId);
+    const r = await fetch("/api/v1/credits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pack_id: packId }) });
+    const d = await r.json();
+    if (d.checkout_url) window.location.href = d.checkout_url;
+    setBuyingPack("");
   };
 
   return (
     <div>
-      <h1 className="h text-xl font-bold text-[var(--text)] mb-2">API Keys</h1>
-      <p className="text-[13px] text-[var(--text-muted)] mb-6">Use the Flinchify API and CLI to create tests programmatically.</p>
+      <h1 className="h" style={{ fontSize: 22, fontWeight: 700, color: "var(--dash-text)", margin: "0 0 8px" }}>API & Credits</h1>
+      <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "0 0 24px" }}>Use the Flinchify API and CLI to create tests programmatically.</p>
 
       {/* Quick start */}
-      <div className="bg-[var(--dark)] rounded-2xl p-6 mb-6 overflow-x-auto">
-        <p className="text-[11px] text-white/40 mb-3 uppercase tracking-wider font-semibold">Quick start</p>
-        <pre className="text-[13px] text-white/80 leading-relaxed"><code>{`# Install the CLI
+      <div style={{ background: theme === "dark" ? "#1A1D27" : "#111", borderRadius: 12, padding: 24, marginBottom: 24, overflowX: "auto" }}>
+        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", margin: "0 0 12px", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Quick start</p>
+        <pre style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, margin: 0 }}><code>{`# Install the CLI
 npm install -g flinchify
 
 # Save your API key
@@ -1195,29 +1156,25 @@ flinchify results ft_42`}</code></pre>
 
       {/* Credits */}
       {credits && (
-        <div className="bg-white rounded-2xl border border-black/[0.04] p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[15px] font-semibold text-[var(--text)]">API Credits</h2>
-            <div className="text-right">
-              <p className="text-[20px] font-bold text-[var(--text)]">${credits.balance}</p>
-              <p className="text-[11px] text-[var(--text-dim)]">available balance</p>
+        <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>API Credits</h2>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: 20, fontWeight: 700, color: "var(--dash-text)", margin: 0 }}>${credits.balance}</p>
+              <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: 0 }}>available balance</p>
             </div>
           </div>
-          <p className="text-[13px] text-[var(--text-muted)] mb-4">
-            Pre-purchase credits so your AI agents can create tests automatically without checkout interruptions. Non-refundable. 20% platform fee included.
-          </p>
-          <div className="grid sm:grid-cols-3 gap-3">
+          <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: "0 0 16px" }}>Pre-purchase credits for AI agents. Non-refundable. 20% fee included.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {credits.packs?.map((pack: any) => (
-              <button
-                key={pack.id}
-                onClick={() => buyCredits(pack.id)}
-                disabled={!!buyingPack}
-                className="p-4 rounded-xl border border-black/[0.06] hover:border-[var(--accent)] transition-colors text-left disabled:opacity-50"
-              >
-                <p className="text-[14px] font-semibold text-[var(--text)]">{pack.label}</p>
-                <p className="text-[12px] text-[var(--text-muted)] mt-0.5">{pack.credits} in credits</p>
-                <p className="text-[15px] font-bold text-[var(--accent)] mt-2">{pack.price}</p>
-                <p className="text-[10px] text-[var(--text-dim)]">inc. 20% platform fee</p>
+              <button key={pack.id} onClick={() => buyCredits(pack.id)} disabled={!!buyingPack}
+                style={{ padding: 16, borderRadius: 10, border: "1px solid var(--dash-border)", background: "transparent", cursor: "pointer", textAlign: "left", opacity: buyingPack ? 0.5 : 1, transition: "border-color 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#F97316"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--dash-border)"; }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>{pack.label}</p>
+                <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: "4px 0 0" }}>{pack.credits} in credits</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#F97316", margin: "8px 0 0" }}>{pack.price}</p>
               </button>
             ))}
           </div>
@@ -1225,34 +1182,23 @@ flinchify results ft_42`}</code></pre>
       )}
 
       {/* Create key */}
-      <div className="bg-white rounded-2xl border border-black/[0.04] p-6 mb-6">
-        <h2 className="text-[15px] font-semibold text-[var(--text)] mb-4">Generate new key</h2>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Key name (e.g. production, ci)"
-            value={keyName}
-            onChange={e => setKeyName(e.target.value)}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--border)] text-[13px] focus:outline-none focus:border-[var(--accent)]"
-          />
-          <button
-            onClick={createKey}
-            disabled={creating}
-            className="px-5 py-2.5 rounded-xl bg-black text-white text-[13px] font-semibold hover:bg-black/90 transition-colors disabled:opacity-50"
-          >
+      <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 24, marginBottom: 24 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 16px" }}>Generate new key</h2>
+        <div style={{ display: "flex", gap: 12 }}>
+          <input type="text" placeholder="Key name (e.g. production, ci)" value={keyName} onChange={e => setKeyName(e.target.value)}
+            style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "1px solid var(--dash-border)", fontSize: 13, outline: "none", background: "var(--dash-input-bg)", color: "var(--dash-text)" }} />
+          <button onClick={createKey} disabled={creating}
+            style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "var(--dash-text)", color: "var(--dash-bg)", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: creating ? 0.5 : 1 }}>
             {creating ? "Creating..." : "Generate"}
           </button>
         </div>
-
         {newKey && (
-          <div className="mt-4 p-4 rounded-xl bg-green-50 border border-green-200">
-            <p className="text-[12px] font-semibold text-green-800 mb-2">Key created — copy it now, it won't be shown again:</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-[13px] text-green-900 bg-green-100 px-3 py-2 rounded-lg font-mono break-all">{newKey}</code>
-              <button
-                onClick={() => { navigator.clipboard.writeText(newKey); }}
-                className="px-3 py-2 rounded-lg bg-green-200 text-green-800 text-[12px] font-medium hover:bg-green-300 transition-colors shrink-0"
-              >
+          <div style={{ marginTop: 16, padding: 16, borderRadius: 10, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#16A34A", margin: "0 0 8px" }}>Key created — copy it now:</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <code style={{ flex: 1, fontSize: 12, color: "#16A34A", background: "rgba(34,197,94,0.06)", padding: "8px 12px", borderRadius: 6, fontFamily: "monospace", wordBreak: "break-all" }}>{newKey}</code>
+              <button onClick={() => navigator.clipboard.writeText(newKey)}
+                style={{ padding: "8px 12px", borderRadius: 6, border: "none", background: "rgba(34,197,94,0.15)", color: "#16A34A", fontSize: 12, fontWeight: 500, cursor: "pointer", flexShrink: 0 }}>
                 Copy
               </button>
             </div>
@@ -1261,44 +1207,33 @@ flinchify results ft_42`}</code></pre>
       </div>
 
       {/* Key list */}
-      <div className="bg-white rounded-2xl border border-black/[0.04] p-6">
-        <h2 className="text-[15px] font-semibold text-[var(--text)] mb-4">Your keys</h2>
+      <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 24 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 16px" }}>Your keys</h2>
         {loading ? (
-          <p className="text-[13px] text-[var(--text-dim)]">Loading...</p>
+          <p style={{ fontSize: 13, color: "var(--dash-text-dim)" }}>Loading...</p>
         ) : keys.length === 0 ? (
-          <p className="text-[13px] text-[var(--text-dim)]">No API keys yet. Generate one above.</p>
+          <p style={{ fontSize: 13, color: "var(--dash-text-dim)" }}>No API keys yet.</p>
         ) : (
-          <div className="space-y-3">
-            {keys.map(k => (
-              <div key={k.id} className={`flex items-center justify-between p-4 rounded-xl border ${k.revoked ? 'border-red-100 bg-red-50/50' : 'border-black/[0.04]'}`}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {keys.map((k: any) => (
+              <div key={k.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, borderRadius: 10, border: `1px solid ${k.revoked ? "rgba(239,68,68,0.15)" : "var(--dash-border)"}`, opacity: k.revoked ? 0.5 : 1 }}>
                 <div>
-                  <p className="text-[13px] font-medium text-[var(--text)]">
-                    {k.name} <span className="font-mono text-[var(--text-dim)]">{k.key_preview}</span>
-                  </p>
-                  <p className="text-[11px] text-[var(--text-dim)] mt-0.5">
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "var(--dash-text)", margin: 0 }}>{k.name} <span style={{ fontFamily: "monospace", color: "var(--dash-text-dim)" }}>{k.key_preview}</span></p>
+                  <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: "4px 0 0" }}>
                     Created {new Date(k.created_at).toLocaleDateString()}
                     {k.last_used_at && ` · Last used ${new Date(k.last_used_at).toLocaleDateString()}`}
-                    {k.revoked && <span className="text-red-500 ml-2">Revoked</span>}
+                    {k.revoked && <span style={{ color: "#EF4444", marginLeft: 8 }}>Revoked</span>}
                   </p>
                 </div>
                 {!k.revoked && (
-                  <button onClick={() => revokeKey(k.id)} className="text-[12px] text-red-500 hover:text-red-700 font-medium">
-                    Revoke
-                  </button>
+                  <button onClick={() => revokeKey(k.id)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#EF4444", fontWeight: 500 }}>Revoke</button>
                 )}
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* API docs link */}
-      <div className="mt-6 text-center">
-        <p className="text-[12px] text-[var(--text-dim)]">
-          API docs: <code className="bg-black/[0.04] px-2 py-0.5 rounded text-[11px]">POST /api/v1/tests</code> · <code className="bg-black/[0.04] px-2 py-0.5 rounded text-[11px]">GET /api/v1/tests/:id</code>
-        </p>
-      </div>
     </div>
   );
 }
-
