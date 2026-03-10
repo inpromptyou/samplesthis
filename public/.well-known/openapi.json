@@ -1,0 +1,239 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Flinchify API",
+    "description": "Human usability testing API. Create test jobs, get real humans to test your app, receive structured feedback with severity-ranked issues and screen recordings.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Flinchify",
+      "url": "https://flinchify.com",
+      "email": "hello@flinchify.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://flinchify.com/api/v1",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/tests": {
+      "post": {
+        "operationId": "createTest",
+        "summary": "Create a human usability test",
+        "description": "Submit a URL for real humans to test. Specify what flows to test, how many testers, and budget per tester. If the user has credits, payment is instant. Otherwise returns a Stripe checkout URL.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "The URL of the app or website to test"
+                  },
+                  "flow": {
+                    "type": "string",
+                    "description": "Description of what testers should do, e.g. 'sign up, create a project, and invite a teammate'"
+                  },
+                  "testers": {
+                    "type": "integer",
+                    "default": 3,
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Number of human testers"
+                  },
+                  "budget_per_tester": {
+                    "type": "number",
+                    "default": 10,
+                    "minimum": 5,
+                    "description": "Budget per tester in dollars (minimum $5)"
+                  },
+                  "tasks": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Specific tasks for testers to complete (optional, alternative to flow)"
+                  },
+                  "time_limit_hours": {
+                    "type": "integer",
+                    "default": 24,
+                    "minimum": 1,
+                    "maximum": 168,
+                    "description": "Time limit for testers to complete the test"
+                  },
+                  "target_audience": {
+                    "type": "string",
+                    "description": "Description of ideal tester, e.g. 'women 25-40 who shop online'"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Test created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "test_id": { "type": "string", "description": "Unique test ID (e.g. ft_127)" },
+                    "status": { "type": "string", "enum": ["paid", "pending_payment"] },
+                    "payment": { "type": "string", "enum": ["credits", "checkout"] },
+                    "checkout_url": { "type": "string", "description": "Stripe checkout URL (only if payment=checkout)" },
+                    "credits_used": { "type": "number" },
+                    "credits_remaining": { "type": "number" },
+                    "testers": { "type": "integer" },
+                    "budget_per_tester": { "type": "number" },
+                    "total": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      },
+      "get": {
+        "operationId": "listTests",
+        "summary": "List your test jobs",
+        "description": "Returns all test jobs created by the authenticated user, most recent first.",
+        "responses": {
+          "200": {
+            "description": "List of tests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tests": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "test_id": { "type": "string" },
+                          "url": { "type": "string" },
+                          "description": { "type": "string" },
+                          "testers": { "type": "integer" },
+                          "status": { "type": "string" },
+                          "applications": { "type": "integer" },
+                          "accepted": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/tests/{test_id}": {
+      "get": {
+        "operationId": "getTestResults",
+        "summary": "Get test details and results",
+        "description": "Returns full test details including tester feedback, severity-ranked issues, and screen recording URLs. Use this to check if testing is complete and review findings.",
+        "parameters": [
+          {
+            "name": "test_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Test ID (e.g. ft_127)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test details with results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "test_id": { "type": "string" },
+                    "url": { "type": "string" },
+                    "description": { "type": "string" },
+                    "status": { "type": "string" },
+                    "testers_requested": { "type": "integer" },
+                    "results": {
+                      "type": "object",
+                      "properties": {
+                        "testers_completed": { "type": "integer" },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+                              "description": { "type": "string" },
+                              "tester": { "type": "string" }
+                            }
+                          }
+                        },
+                        "recordings": {
+                          "type": "array",
+                          "items": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/credits": {
+      "get": {
+        "operationId": "getCredits",
+        "summary": "Check credit balance",
+        "description": "Returns the current credit balance and available credit packs for purchase.",
+        "responses": {
+          "200": {
+            "description": "Credit balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "balance": { "type": "string", "description": "Current balance in dollars" },
+                    "balance_cents": { "type": "integer" },
+                    "packs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "label": { "type": "string" },
+                          "credits": { "type": "string" },
+                          "price": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key from flinchify.com/dashboard. Format: fk_..."
+      }
+    }
+  }
+}

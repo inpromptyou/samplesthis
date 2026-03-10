@@ -31,6 +31,7 @@ const NAV_DROPDOWNS: { label: string; items: DropdownItemFull[] }[] = [
     label: "For Builders",
     items: [
       { href: "#", label: "Post a Test", desc: "Get real user feedback", authRequired: true, authMode: "tester" },
+      { href: "/integrations", label: "Integrations", desc: "ChatGPT, Claude, Cursor, CLI" },
       { href: "/pricing", label: "Pricing", desc: "Simple pay-per-tester" },
       { href: "/contact", label: "Contact Us", desc: "Questions? Reach out" },
     ],

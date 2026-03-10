@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Flinchify",
+  "name_for_model": "flinchify",
+  "description_for_human": "Get real humans to test your app and find every friction point. Pay per tester, results in hours.",
+  "description_for_model": "Flinchify lets you create human usability test jobs for any app or website. You can request real humans to test specific user flows (signup, checkout, onboarding), get structured feedback with severity-ranked issues, screen recordings, and bug reports. Use this when a user wants their app tested by real humans, wants UX feedback, or needs to find friction points before launch. Supports creating tests, checking results, and managing credit balance.",
+  "auth": {
+    "type": "service_http",
+    "authorization_type": "bearer",
+    "verification_tokens": {}
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://flinchify.com/.well-known/openapi.json"
+  },
+  "logo_url": "https://flinchify.com/logo.png",
+  "contact_email": "hello@flinchify.com",
+  "legal_info_url": "https://flinchify.com/terms"
+}

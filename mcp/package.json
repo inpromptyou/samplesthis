@@ -1,0 +1,16 @@
+{
+  "name": "@flinchify/mcp-server",
+  "version": "0.1.0",
+  "description": "Flinchify MCP server — human usability testing for AI agents",
+  "type": "module",
+  "bin": {
+    "flinchify-mcp": "./server.mjs"
+  },
+  "keywords": ["mcp", "flinchify", "testing", "usability", "claude"],
+  "author": "Flinchify",
+  "license": "MIT",
+  "homepage": "https://flinchify.com",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
