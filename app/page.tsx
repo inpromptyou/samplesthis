@@ -116,12 +116,9 @@ function Home() {
 
   useEffect(() => {
     fetch("/api/testers/me").then(r => r.json()).then(d => {
-      if (d?.authenticated || d?.id) {
-        router.push("/dashboard");
-        return;
-      }
+      if (d?.authenticated || d?.id) setLoggedIn(true);
     }).catch(() => {});
-  }, [router]);
+  }, []);
 
   return (
     <>
