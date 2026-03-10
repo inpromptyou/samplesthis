@@ -253,6 +253,11 @@ function Dashboard() {
       setBookingsLoading(true);
       fetch("/api/bookings").then(r => r.json()).then(d => { setBookings(d.bookings || []); setBookingsLoading(false); }).catch(() => setBookingsLoading(false));
     }
+    if (tab === "overview") {
+      // Fetch active jobs + bookings for overview cards
+      fetch("/api/applications/mine").then(r => r.json()).then(d => setMyApps(d.applications || [])).catch(() => {});
+      fetch("/api/bookings").then(r => r.json()).then(d => setBookings(d.bookings || [])).catch(() => {});
+    }
     if (tab === "overview" || tab === "posttest") {
       setPostedLoading(true);
       fetch("/api/orders/mine").then(r => r.json()).then(d => { setPostedJobs(d.orders || []); setPostedLoading(false); }).catch(() => setPostedLoading(false));
@@ -628,28 +633,121 @@ function Dashboard() {
                 </div>
               </div>
 
-              {/* Quick actions */}
+              {/* Two-column: Active jobs + Notifications/Support */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
-                <button onClick={() => setTab("explore")} style={{
-                  background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12,
-                  padding: 24, textAlign: "left", cursor: "pointer", transition: "border-color 0.15s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#F97316"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--dash-border)"; }}
-                >
-                  <p className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 4px" }}>Explore jobs</p>
-                  <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: 0 }}>Find test jobs and start earning.</p>
-                </button>
-                <button onClick={() => setTab("posttest")} style={{
-                  background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12,
-                  padding: 24, textAlign: "left", cursor: "pointer", transition: "border-color 0.15s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#F97316"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--dash-border)"; }}
-                >
-                  <p className="h" style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 4px" }}>Post a test</p>
-                  <p style={{ fontSize: 13, color: "var(--dash-text-secondary)", margin: 0 }}>Get real humans to test your app.</p>
-                </button>
+
+                {/* Active jobs (applied) */}
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>Active Jobs</p>
+                    <button onClick={() => setTab("myjobs")} style={{ background: "none", border: "none", fontSize: 12, color: "#F97316", cursor: "pointer", fontWeight: 500 }}>View all</button>
+                  </div>
+                  {myApps.filter(a => a.status === "accepted" || a.status === "pending").length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "20px 0" }}>
+                      <p style={{ fontSize: 12, color: "var(--dash-text-dim)", margin: 0 }}>No active jobs</p>
+                      <button onClick={() => setTab("explore")} style={{ background: "none", border: "none", fontSize: 12, color: "#F97316", cursor: "pointer", marginTop: 4 }}>Browse jobs →</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {myApps.filter(a => a.status === "accepted" || a.status === "pending").slice(0, 4).map(a => (
+                        <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 8, background: "var(--dash-bg)" }}>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 500, color: "var(--dash-text)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{dom(a.app_url)}</p>
+                            <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: "2px 0 0" }}>${((a.price_per_tester_cents || 0) / 100).toFixed(0)} · {a.app_type || "App"}</p>
+                          </div>
+                          <span style={{
+                            flexShrink: 0, padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 600, marginLeft: 8,
+                            background: a.status === "accepted" ? "rgba(37,99,235,0.1)" : "rgba(234,179,8,0.1)",
+                            color: a.status === "accepted" ? "#2563EB" : "#CA8A04",
+                          }}>{a.status === "accepted" ? "In Progress" : "Pending"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent notifications */}
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>Notifications</p>
+                      {unreadCount > 0 && <span style={{ padding: "1px 6px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: "#EF4444", color: "white" }}>{unreadCount}</span>}
+                    </div>
+                    {unreadCount > 0 && <button onClick={markAllRead} style={{ background: "none", border: "none", fontSize: 11, color: "#F97316", cursor: "pointer" }}>Mark read</button>}
+                  </div>
+                  {notifications.length === 0 ? (
+                    <p style={{ fontSize: 12, color: "var(--dash-text-dim)", textAlign: "center", padding: "20px 0", margin: 0 }}>No notifications yet</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {notifications.slice(0, 5).map(n => (
+                        <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 10px", borderRadius: 8, background: n.read ? "transparent" : "rgba(249,115,22,0.04)" }}>
+                          {!n.read && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#F97316", marginTop: 5, flexShrink: 0 }} />}
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 12, fontWeight: n.read ? 400 : 600, color: "var(--dash-text)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.title}</p>
+                            <p style={{ fontSize: 10, color: "var(--dash-text-dim)", margin: "2px 0 0" }}>{new Date(n.created_at).toLocaleString("en-AU", { dateStyle: "short", timeStyle: "short" })}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Two-column: Upcoming bookings + Support messages */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
+                {/* Upcoming bookings */}
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>Upcoming Bookings</p>
+                    <button onClick={() => setTab("bookings")} style={{ background: "none", border: "none", fontSize: 12, color: "#F97316", cursor: "pointer", fontWeight: 500 }}>View all</button>
+                  </div>
+                  {bookings.filter(b => b.status === "pending" || b.status === "confirmed").length === 0 ? (
+                    <p style={{ fontSize: 12, color: "var(--dash-text-dim)", textAlign: "center", padding: "20px 0", margin: 0 }}>No upcoming bookings</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {bookings.filter(b => b.status === "pending" || b.status === "confirmed").slice(0, 3).map(b => (
+                        <div key={b.id} style={{ padding: "10px 12px", borderRadius: 8, background: "var(--dash-bg)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <p style={{ fontSize: 13, fontWeight: 500, color: "var(--dash-text)", margin: 0 }}>{dom(b.app_url)}</p>
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, color: b.status === "confirmed" ? "#2563EB" : "#CA8A04", background: b.status === "confirmed" ? "rgba(37,99,235,0.1)" : "rgba(234,179,8,0.1)" }}>{b.status}</span>
+                          </div>
+                          <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: "4px 0 0" }}>
+                            {new Date(b.scheduled_date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} at {b.scheduled_time} · {b.duration_minutes}min
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Support messages preview */}
+                <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>Support</p>
+                  </div>
+                  <SupportPreview />
+                </div>
+              </div>
+
+              {/* Quick actions */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 32 }}>
+                {[
+                  { label: "Explore jobs", desc: "Find test jobs and earn", tab: "explore", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
+                  { label: "Post a test", desc: "Get humans to test your app", tab: "posttest", icon: "M12 4v16m8-8H4" },
+                  { label: "API & Credits", desc: "Manage keys and credits", tab: "api", icon: "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.74 5.74L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.59l5.96-5.96A6 6 0 1121 9z" },
+                ].map(a => (
+                  <button key={a.tab} onClick={() => setTab(a.tab)} style={{
+                    background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12,
+                    padding: "20px 16px", textAlign: "left", cursor: "pointer", transition: "border-color 0.15s",
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#F97316"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--dash-border)"; }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--dash-text-dim)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 8 }}><path d={a.icon}/></svg>
+                    <p className="h" style={{ fontSize: 13, fontWeight: 600, color: "var(--dash-text)", margin: "0 0 2px" }}>{a.label}</p>
+                    <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: 0 }}>{a.desc}</p>
+                  </button>
+                ))}
               </div>
 
               {/* Posted jobs */}
@@ -1155,6 +1253,55 @@ function Dashboard() {
           .dash-main > div { padding: 20px 16px 40px !important; }
         }
       `}</style>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   SUPPORT PREVIEW (OVERVIEW TAB)
+   ═══════════════════════════════════════════════ */
+
+function SupportPreview() {
+  const [msgs, setMsgs] = useState<{ id: number; sender: string; message: string; created_at: string }[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    fetch("/api/support").then(r => r.json()).then(d => { setMsgs(d.messages || []); setLoaded(true); }).catch(() => setLoaded(true));
+  }, []);
+
+  if (!loaded) return <p style={{ fontSize: 12, color: "var(--dash-text-dim)", textAlign: "center", padding: "20px 0", margin: 0 }}>Loading...</p>;
+
+  if (msgs.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "12px 0" }}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--dash-text-dim)" strokeWidth="1.5" style={{ margin: "0 auto 8px", display: "block", opacity: 0.5 }}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <p style={{ fontSize: 12, color: "var(--dash-text-dim)", margin: "0 0 4px" }}>No support messages</p>
+        <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: 0, opacity: 0.7 }}>Use the chat bubble to reach us</p>
+      </div>
+    );
+  }
+
+  const recent = msgs.slice(-3);
+  const hasAdminReply = recent.some(m => m.sender === "admin");
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {recent.map(m => (
+        <div key={m.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 0" }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: "50%", flexShrink: 0, fontSize: 9, fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: m.sender === "admin" ? "#F97316" : "var(--dash-hover)",
+            color: m.sender === "admin" ? "white" : "var(--dash-text-dim)",
+          }}>{m.sender === "admin" ? "F" : "You"}</div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, color: "var(--dash-text)", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{m.message}</p>
+            <p style={{ fontSize: 10, color: "var(--dash-text-dim)", margin: "2px 0 0" }}>{new Date(m.created_at).toLocaleString("en-AU", { dateStyle: "short", timeStyle: "short" })}</p>
+          </div>
+        </div>
+      ))}
+      {hasAdminReply && (
+        <p style={{ fontSize: 11, color: "#16A34A", fontWeight: 500, margin: "4px 0 0" }}>Team replied — check the chat bubble</p>
+      )}
     </div>
   );
 }
