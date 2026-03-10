@@ -51,6 +51,7 @@ const NAV_ITEMS = [
   { key: "howit", label: "How it Works", icon: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { key: "pricing", label: "Pricing", icon: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" },
   { key: "profile", label: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
+  { key: "api", label: "API Keys", icon: "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" },
 ];
 
 const SORT_OPTIONS = ["Newest", "Highest pay", "Most spots"];
@@ -1100,7 +1101,152 @@ function Dashboard() {
             </div>
           </div>
         )}
+        {/* ═══ API KEYS ═══ */}
+        {tab === "api" && <ApiKeysTab />}
       </main>
+    </div>
+  );
+}
+
+function ApiKeysTab() {
+  const [keys, setKeys] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newKey, setNewKey] = useState("");
+  const [keyName, setKeyName] = useState("");
+
+  const fetchKeys = async () => {
+    const res = await fetch("/api/v1/keys");
+    const data = await res.json();
+    setKeys(data.keys || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchKeys(); }, []);
+
+  const createKey = async () => {
+    setCreating(true);
+    const res = await fetch("/api/v1/keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: keyName || "default" }),
+    });
+    const data = await res.json();
+    if (data.key) {
+      setNewKey(data.key);
+      setKeyName("");
+      fetchKeys();
+    }
+    setCreating(false);
+  };
+
+  const revokeKey = async (id: number) => {
+    if (!confirm("Revoke this key? It will stop working immediately.")) return;
+    await fetch("/api/v1/keys", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key_id: id }),
+    });
+    fetchKeys();
+  };
+
+  return (
+    <div>
+      <h1 className="h text-xl font-bold text-[var(--text)] mb-2">API Keys</h1>
+      <p className="text-[13px] text-[var(--text-muted)] mb-6">Use the Flinchify API and CLI to create tests programmatically.</p>
+
+      {/* Quick start */}
+      <div className="bg-[var(--dark)] rounded-2xl p-6 mb-6 overflow-x-auto">
+        <p className="text-[11px] text-white/40 mb-3 uppercase tracking-wider font-semibold">Quick start</p>
+        <pre className="text-[13px] text-white/80 leading-relaxed"><code>{`# Install the CLI
+npm install -g flinchify
+
+# Save your API key
+flinchify init
+
+# Create a test
+flinchify test https://yourapp.com \\
+  --flow "sign up and create a project" \\
+  --testers 3 --budget 10
+
+# Check results
+flinchify results ft_42`}</code></pre>
+      </div>
+
+      {/* Create key */}
+      <div className="bg-white rounded-2xl border border-black/[0.04] p-6 mb-6">
+        <h2 className="text-[15px] font-semibold text-[var(--text)] mb-4">Generate new key</h2>
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Key name (e.g. production, ci)"
+            value={keyName}
+            onChange={e => setKeyName(e.target.value)}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--border)] text-[13px] focus:outline-none focus:border-[var(--accent)]"
+          />
+          <button
+            onClick={createKey}
+            disabled={creating}
+            className="px-5 py-2.5 rounded-xl bg-black text-white text-[13px] font-semibold hover:bg-black/90 transition-colors disabled:opacity-50"
+          >
+            {creating ? "Creating..." : "Generate"}
+          </button>
+        </div>
+
+        {newKey && (
+          <div className="mt-4 p-4 rounded-xl bg-green-50 border border-green-200">
+            <p className="text-[12px] font-semibold text-green-800 mb-2">Key created — copy it now, it won't be shown again:</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-[13px] text-green-900 bg-green-100 px-3 py-2 rounded-lg font-mono break-all">{newKey}</code>
+              <button
+                onClick={() => { navigator.clipboard.writeText(newKey); }}
+                className="px-3 py-2 rounded-lg bg-green-200 text-green-800 text-[12px] font-medium hover:bg-green-300 transition-colors shrink-0"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Key list */}
+      <div className="bg-white rounded-2xl border border-black/[0.04] p-6">
+        <h2 className="text-[15px] font-semibold text-[var(--text)] mb-4">Your keys</h2>
+        {loading ? (
+          <p className="text-[13px] text-[var(--text-dim)]">Loading...</p>
+        ) : keys.length === 0 ? (
+          <p className="text-[13px] text-[var(--text-dim)]">No API keys yet. Generate one above.</p>
+        ) : (
+          <div className="space-y-3">
+            {keys.map(k => (
+              <div key={k.id} className={`flex items-center justify-between p-4 rounded-xl border ${k.revoked ? 'border-red-100 bg-red-50/50' : 'border-black/[0.04]'}`}>
+                <div>
+                  <p className="text-[13px] font-medium text-[var(--text)]">
+                    {k.name} <span className="font-mono text-[var(--text-dim)]">{k.key_preview}</span>
+                  </p>
+                  <p className="text-[11px] text-[var(--text-dim)] mt-0.5">
+                    Created {new Date(k.created_at).toLocaleDateString()}
+                    {k.last_used_at && ` · Last used ${new Date(k.last_used_at).toLocaleDateString()}`}
+                    {k.revoked && <span className="text-red-500 ml-2">Revoked</span>}
+                  </p>
+                </div>
+                {!k.revoked && (
+                  <button onClick={() => revokeKey(k.id)} className="text-[12px] text-red-500 hover:text-red-700 font-medium">
+                    Revoke
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* API docs link */}
+      <div className="mt-6 text-center">
+        <p className="text-[12px] text-[var(--text-dim)]">
+          API docs: <code className="bg-black/[0.04] px-2 py-0.5 rounded text-[11px]">POST /api/v1/tests</code> · <code className="bg-black/[0.04] px-2 py-0.5 rounded text-[11px]">GET /api/v1/tests/:id</code>
+        </p>
+      </div>
     </div>
   );
 }

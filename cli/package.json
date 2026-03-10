@@ -1,0 +1,17 @@
+{
+  "name": "flinchify",
+  "version": "0.1.0",
+  "description": "Test your app with real humans from the terminal",
+  "bin": {
+    "flinchify": "./bin/flinchify.mjs"
+  },
+  "type": "module",
+  "keywords": ["testing", "usability", "ux", "qa", "human-testing", "flinchify"],
+  "author": "Flinchify",
+  "license": "MIT",
+  "homepage": "https://flinchify.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/inpromptyou/flinchify-cli"
+  }
+}

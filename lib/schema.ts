@@ -116,6 +116,8 @@ export async function ensureTables() {
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tasks JSONB DEFAULT '[]'`;
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS booking_required BOOLEAN DEFAULT false`;
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS booking_deadline TIMESTAMP`;
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS api_created BOOLEAN DEFAULT false`;
+    await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS recording_url VARCHAR(500)`;
 
     migrated = true;
   } catch (e) {
