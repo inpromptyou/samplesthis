@@ -98,22 +98,6 @@ function Home() {
         {/* ═══ SOCIAL PROOF ═══ */}
         <section className="py-12 sm:py-16 px-5 sm:px-6 border-b border-[var(--border)]">
           <div className="max-w-[900px] mx-auto">
-            {/* Stats row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mb-12 sm:mb-16">
-              {[
-                { num: "500+", label: "Testers ready" },
-                { num: "24hr", label: "Avg turnaround" },
-                { num: "$5", label: "Starting price" },
-                { num: "0%", label: "Platform fees" },
-              ].map((s, i) => (
-                <div key={i} className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-[var(--text)]">{s.num}</div>
-                  <div className="text-[12px] sm:text-[13px] text-[var(--text-dim)] mt-1">{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Testimonial cards */}
             <p className="text-center text-[11px] font-medium text-[var(--text-dim)] uppercase tracking-[0.2em] mb-6">Trusted by indie builders</p>
             <div className="grid sm:grid-cols-3 gap-4">
               {[
