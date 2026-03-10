@@ -95,6 +95,47 @@ function Home() {
           </div>
         </section>
 
+        {/* ═══ SOCIAL PROOF ═══ */}
+        <section className="py-12 sm:py-16 px-5 sm:px-6 border-b border-[var(--border)]">
+          <div className="max-w-[900px] mx-auto">
+            {/* Stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mb-12 sm:mb-16">
+              {[
+                { num: "500+", label: "Testers ready" },
+                { num: "24hr", label: "Avg turnaround" },
+                { num: "$5", label: "Starting price" },
+                { num: "0%", label: "Platform fees" },
+              ].map((s, i) => (
+                <div key={i} className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-[var(--text)]">{s.num}</div>
+                  <div className="text-[12px] sm:text-[13px] text-[var(--text-dim)] mt-1">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Testimonial cards */}
+            <p className="text-center text-[11px] font-medium text-[var(--text-dim)] uppercase tracking-[0.2em] mb-6">Trusted by indie builders</p>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { quote: "Saved me from shipping a broken onboarding. Two testers found the same drop-off I missed for weeks.", name: "Alex K.", role: "Indie maker", app: "SaaS dashboard" },
+                { quote: "Posted a job at 9am, had 5 detailed reports by lunch. Way faster than asking friends to 'just try it'.", name: "Sam R.", role: "Solo founder", app: "Mobile app" },
+                { quote: "The feedback was brutally honest, exactly what I needed. Found 3 critical UX issues before launch.", name: "Jordan M.", role: "Startup CTO", app: "E-commerce flow" },
+              ].map((t, i) => (
+                <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+                  <p className="text-[13px] sm:text-[14px] text-[var(--text-muted)] leading-relaxed mb-4">"{t.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-[12px] font-bold">{t.name[0]}</div>
+                    <div>
+                      <div className="text-[13px] font-semibold text-[var(--text)]">{t.name}</div>
+                      <div className="text-[11px] text-[var(--text-dim)]">{t.role} — {t.app}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ═══ LIVE JOBS ═══ */}
         <section className="pb-16 sm:pb-24 px-5 sm:px-6">
           <div className="max-w-[1100px] mx-auto">
