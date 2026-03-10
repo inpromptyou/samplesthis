@@ -218,6 +218,10 @@ function Dashboard() {
   const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [cancellingJob, setCancellingJob] = useState(false);
+  // Notifications
+  const [notifications, setNotifications] = useState<{ id: number; type: string; title: string; message: string; link: string | null; read: boolean; created_at: string }[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notiOpen, setNotiOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/testers/me")
@@ -225,7 +229,16 @@ function Dashboard() {
       .then(d => { if (!d.authenticated) { router.push("/"); return; } setTester(d.tester); setLoading(false); })
       .catch(() => router.push("/"));
     fetch("/api/connect/status").then(r => r.json()).then(d => setConnectStatus(d)).catch(() => {});
+    fetch("/api/notifications").then(r => r.json()).then(d => { setNotifications(d.notifications || []); setUnreadCount(d.unread || 0); }).catch(() => {});
   }, [router]);
+
+  // Poll notifications every 30s
+  useEffect(() => {
+    const iv = setInterval(() => {
+      fetch("/api/notifications").then(r => r.json()).then(d => { setNotifications(d.notifications || []); setUnreadCount(d.unread || 0); }).catch(() => {});
+    }, 30000);
+    return () => clearInterval(iv);
+  }, []);
 
   useEffect(() => {
     if (tab === "myjobs") {
@@ -331,6 +344,12 @@ function Dashboard() {
 
   const switchTab = (key: string) => { setTab(key); setSidebarOpen(false); };
 
+  const markAllRead = async () => {
+    await fetch("/api/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ read_all: true }) });
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+  };
+
   /* ─── Loading state ─── */
   if (loading || !tester) {
     return (
@@ -379,11 +398,68 @@ function Dashboard() {
             <Image src="/logo.png" alt="Flinchify" width={28} height={28} />
             <span className="h" style={{ fontSize: 16, fontWeight: 700, color: "var(--dash-text)" }}>Flinchify</span>
           </Link>
-          {/* Mobile close */}
-          <button onClick={() => setSidebarOpen(false)} className="sidebar-close"
-            style={{ display: "none", background: "none", border: "none", color: "var(--dash-text-dim)", cursor: "pointer", padding: 4 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Notification bell */}
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setNotiOpen(!notiOpen)}
+                style={{ background: "none", border: "none", color: "var(--dash-text-secondary)", cursor: "pointer", padding: 4, position: "relative" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: "absolute", top: 0, right: 0, width: 16, height: 16, borderRadius: "50%",
+                    background: "#EF4444", color: "white", fontSize: 9, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>{unreadCount > 9 ? "9+" : unreadCount}</span>
+                )}
+              </button>
+
+              {/* Notification dropdown */}
+              {notiOpen && (
+                <div style={{
+                  position: "absolute", top: "100%", left: -80, width: 300, maxHeight: 400,
+                  background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: 12,
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.15)", zIndex: 200, overflow: "hidden", marginTop: 8,
+                }}>
+                  <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--dash-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--dash-text)", margin: 0 }}>Notifications</p>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllRead} style={{ background: "none", border: "none", fontSize: 12, color: "#F97316", cursor: "pointer", fontWeight: 500 }}>Mark all read</button>
+                    )}
+                  </div>
+                  <div style={{ maxHeight: 340, overflowY: "auto" }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: 24, textAlign: "center" }}>
+                        <p style={{ fontSize: 13, color: "var(--dash-text-dim)" }}>No notifications yet.</p>
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div key={n.id} onClick={() => { if (n.link) { setTab(n.link.includes("tab=") ? n.link.split("tab=")[1] : "overview"); } setNotiOpen(false); }}
+                          style={{
+                            padding: "12px 16px", borderBottom: "1px solid var(--dash-border)",
+                            cursor: n.link ? "pointer" : "default",
+                            background: n.read ? "transparent" : "rgba(249,115,22,0.04)",
+                          }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                            {!n.read && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#F97316", marginTop: 6, flexShrink: 0 }} />}
+                            <div>
+                              <p style={{ fontSize: 13, fontWeight: n.read ? 400 : 600, color: "var(--dash-text)", margin: 0 }}>{n.title}</p>
+                              {n.message && <p style={{ fontSize: 12, color: "var(--dash-text-dim)", margin: "2px 0 0" }}>{n.message}</p>}
+                              <p style={{ fontSize: 10, color: "var(--dash-text-dim)", margin: "4px 0 0" }}>{new Date(n.created_at).toLocaleString("en-AU", { dateStyle: "short", timeStyle: "short" })}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Mobile close */}
+            <button onClick={() => setSidebarOpen(false)} className="sidebar-close"
+              style={{ display: "none", background: "none", border: "none", color: "var(--dash-text-dim)", cursor: "pointer", padding: 4 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
         </div>
 
         {/* Nav */}

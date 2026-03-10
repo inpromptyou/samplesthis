@@ -119,6 +119,27 @@ export async function ensureTables() {
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS api_created BOOLEAN DEFAULT false`;
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS recording_url VARCHAR(500)`;
 
+    // Notifications
+    await sql`CREATE TABLE IF NOT EXISTS notifications (
+      id SERIAL PRIMARY KEY,
+      tester_id INTEGER REFERENCES testers(id),
+      type VARCHAR(50) NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      message TEXT,
+      link VARCHAR(500),
+      read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`;
+
+    // Support messages
+    await sql`CREATE TABLE IF NOT EXISTS support_messages (
+      id SERIAL PRIMARY KEY,
+      tester_id INTEGER REFERENCES testers(id),
+      sender VARCHAR(20) DEFAULT 'user',
+      message TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`;
+
     migrated = true;
   } catch (e) {
     console.error("Auto-migrate failed:", e);

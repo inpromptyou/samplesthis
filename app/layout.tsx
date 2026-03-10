@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 };
 
 import GlobalAuth from "@/components/GlobalAuth";
+import SupportChat from "@/components/SupportChat";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-[family-name:var(--font-body)] antialiased overflow-x-hidden">
         {children}
         <GlobalAuth />
+        <SupportChat />
       </body>
     </html>
   );
