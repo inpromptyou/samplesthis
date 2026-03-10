@@ -21,11 +21,21 @@ export async function POST(req: NextRequest) {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
-      const orderId = session.metadata?.order_id;
+      const sql = getSql();
 
-      if (orderId) {
-        const sql = getSql();
-        await sql`UPDATE orders SET status = 'paid' WHERE id = ${parseInt(orderId)}`;
+      // Credit purchase
+      if (session.metadata?.type === "credit_purchase") {
+        const testerId = parseInt(session.metadata.tester_id);
+        const creditCents = parseInt(session.metadata.credit_cents);
+        if (testerId && creditCents) {
+          await sql`UPDATE testers SET credit_cents = COALESCE(credit_cents, 0) + ${creditCents} WHERE id = ${testerId}`;
+          console.log(`Credits added: ${creditCents} cents to tester ${testerId}`);
+        }
+      }
+      // Regular order payment
+      else if (session.metadata?.order_id) {
+        const orderId = parseInt(session.metadata.order_id);
+        await sql`UPDATE orders SET status = 'paid' WHERE id = ${orderId}`;
       }
     }
 

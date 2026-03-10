@@ -1114,6 +1114,8 @@ function ApiKeysTab() {
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [keyName, setKeyName] = useState("");
+  const [credits, setCredits] = useState<any>(null);
+  const [buyingPack, setBuyingPack] = useState("");
 
   const fetchKeys = async () => {
     const res = await fetch("/api/v1/keys");
@@ -1122,7 +1124,25 @@ function ApiKeysTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchKeys(); }, []);
+  const fetchCredits = async () => {
+    const res = await fetch("/api/v1/credits");
+    const data = await res.json();
+    setCredits(data);
+  };
+
+  const buyCredits = async (packId: string) => {
+    setBuyingPack(packId);
+    const res = await fetch("/api/v1/credits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pack_id: packId }),
+    });
+    const data = await res.json();
+    if (data.checkout_url) window.location.href = data.checkout_url;
+    setBuyingPack("");
+  };
+
+  useEffect(() => { fetchKeys(); fetchCredits(); }, []);
 
   const createKey = async () => {
     setCreating(true);
@@ -1172,6 +1192,37 @@ flinchify test https://yourapp.com \\
 # Check results
 flinchify results ft_42`}</code></pre>
       </div>
+
+      {/* Credits */}
+      {credits && (
+        <div className="bg-white rounded-2xl border border-black/[0.04] p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[15px] font-semibold text-[var(--text)]">API Credits</h2>
+            <div className="text-right">
+              <p className="text-[20px] font-bold text-[var(--text)]">${credits.balance}</p>
+              <p className="text-[11px] text-[var(--text-dim)]">available balance</p>
+            </div>
+          </div>
+          <p className="text-[13px] text-[var(--text-muted)] mb-4">
+            Pre-purchase credits so your AI agents can create tests automatically without checkout interruptions. Non-refundable. 20% platform fee included.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {credits.packs?.map((pack: any) => (
+              <button
+                key={pack.id}
+                onClick={() => buyCredits(pack.id)}
+                disabled={!!buyingPack}
+                className="p-4 rounded-xl border border-black/[0.06] hover:border-[var(--accent)] transition-colors text-left disabled:opacity-50"
+              >
+                <p className="text-[14px] font-semibold text-[var(--text)]">{pack.label}</p>
+                <p className="text-[12px] text-[var(--text-muted)] mt-0.5">{pack.credits} in credits</p>
+                <p className="text-[15px] font-bold text-[var(--accent)] mt-2">{pack.price}</p>
+                <p className="text-[10px] text-[var(--text-dim)]">inc. 20% platform fee</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Create key */}
       <div className="bg-white rounded-2xl border border-black/[0.04] p-6 mb-6">

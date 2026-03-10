@@ -70,8 +70,49 @@ export async function POST(req: NextRequest) {
     const description = sanitize(flow || "General usability test");
 
     const sql = getSql();
+    const useCredits = body.use_credits !== false; // default: try credits first
 
-    // Create order
+    // Check credit balance
+    const [account] = await sql`SELECT id, credit_cents FROM testers WHERE email = ${user.email}`;
+    const creditBalance = account?.credit_cents || 0;
+    const canPayWithCredits = useCredits && creditBalance >= totalCents;
+
+    if (canPayWithCredits) {
+      // ── CREDIT PAYMENT — instant, no checkout ──
+      const rows = await sql`
+        INSERT INTO orders (
+          email, company, app_url, app_type, description, target_audience,
+          plan, testers_count, price_cents, price_per_tester_cents,
+          time_limit_hours, test_mode, tasks, status, api_created
+        ) VALUES (
+          ${user.email}, ${user.name || null}, ${sanitize(url)}, ${'web'},
+          ${description}, ${sanitize(body.target_audience || '') || null},
+          ${'custom'}, ${count}, ${totalCents}, ${Math.round(perTester * 100)},
+          ${timeLimit}, ${testMode}, ${JSON.stringify(taskList)}, ${'paid'},
+          ${true}
+        ) RETURNING id, created_at
+      `;
+
+      // Deduct credits
+      await sql`UPDATE testers SET credit_cents = credit_cents - ${totalCents} WHERE id = ${account.id} AND credit_cents >= ${totalCents}`;
+
+      const order = rows[0];
+      return NextResponse.json({
+        test_id: `ft_${order.id}`,
+        status: "paid",
+        payment: "credits",
+        credits_used: totalCents / 100,
+        credits_remaining: (creditBalance - totalCents) / 100,
+        testers: count,
+        budget_per_tester: perTester,
+        total: count * perTester,
+        currency: user.currency || "usd",
+        time_limit_hours: timeLimit,
+        created_at: order.created_at,
+      }, { status: 201 });
+    }
+
+    // ── STRIPE CHECKOUT — fallback when no credits ──
     const rows = await sql`
       INSERT INTO orders (
         email, company, app_url, app_type, description, target_audience,
@@ -88,7 +129,6 @@ export async function POST(req: NextRequest) {
 
     const order = rows[0];
 
-    // Generate Stripe checkout
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json({ error: "server", message: "Payment not configured" }, { status: 503 });
     }
@@ -123,7 +163,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       test_id: `ft_${order.id}`,
       status: "pending_payment",
+      payment: "checkout",
       checkout_url: session.url,
+      credits_balance: creditBalance / 100,
+      credits_needed: (totalCents - creditBalance) / 100,
       testers: count,
       budget_per_tester: perTester,
       total: count * perTester,

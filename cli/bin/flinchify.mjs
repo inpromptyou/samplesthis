@@ -84,6 +84,7 @@ ${bold("COMMANDS")}
   ${cyan("test")} <url>                Create a test job
   ${cyan("results")} <test_id>         Get test results
   ${cyan("list")}                     List your tests
+  ${cyan("balance")}                  Check credit balance
   ${cyan("help")}                     Show this help
 
 ${bold("EXAMPLES")}
@@ -167,10 +168,19 @@ async function cmdTest() {
   if (res.status === 201) {
     console.log(green("✓ Test created!"));
     console.log(`  ${bold("ID:")}       ${res.data.test_id}`);
-    console.log(`  ${bold("Status:")}   ${yellow(res.data.status)}`);
+    console.log(`  ${bold("Status:")}   ${res.data.status === "paid" ? green("paid (credits)") : yellow(res.data.status)}`);
     console.log(`  ${bold("Total:")}    $${res.data.total} ${res.data.currency.toUpperCase()}`);
-    console.log(`\n  ${bold("Pay here:")} ${cyan(res.data.checkout_url)}\n`);
-    console.log(dim("  After payment, testers will be matched. Check results with:"));
+
+    if (res.data.payment === "credits") {
+      console.log(green(`\n  ✓ Paid with credits. $${res.data.credits_used} used, $${res.data.credits_remaining} remaining.`));
+      console.log(dim("  Testers will be matched shortly. Check results with:"));
+    } else {
+      console.log(`\n  ${bold("Pay here:")} ${cyan(res.data.checkout_url)}`);
+      if (res.data.credits_balance > 0) {
+        console.log(dim(`  Credits balance: $${res.data.credits_balance} (need $${res.data.credits_needed} more)`));
+      }
+      console.log(dim("\n  After payment, testers will be matched. Check results with:"));
+    }
     console.log(dim(`  flinchify results ${res.data.test_id}\n`));
   } else {
     console.error(red(`\n✗ Failed (${res.status}): ${res.data.message || res.data.error}\n`));
@@ -244,6 +254,32 @@ async function cmdList() {
   });
 }
 
+async function cmdBalance() {
+  console.log(`\n${bold("Credit balance:")}\n`);
+  const res = await apiRequest("GET", "/../v1/credits");
+
+  if (res.status !== 200) {
+    // Try alternate path
+    const res2 = await apiRequest("GET", "/credits");
+    if (res2.status === 200) {
+      console.log(`  ${bold("Balance:")} ${green("$" + res2.data.balance)}`);
+      console.log(dim(`\n  Buy credits at https://flinchify.com/dashboard?tab=api\n`));
+      return;
+    }
+    console.error(red(`✗ ${res.data.message || "Failed to fetch balance"}`));
+    process.exit(1);
+  }
+
+  console.log(`  ${bold("Balance:")} ${green("$" + res.data.balance)}`);
+  if (res.data.packs?.length) {
+    console.log(dim(`\n  Credit packs available:`));
+    res.data.packs.forEach(p => {
+      console.log(`    ${bold(p.label)} — ${p.credits} credits for ${p.price}`);
+    });
+  }
+  console.log(dim(`\n  Buy credits at https://flinchify.com/dashboard?tab=api\n`));
+}
+
 // ── Router ──
 
 const cmd = process.argv[2];
@@ -253,6 +289,7 @@ switch (cmd) {
   case "test": cmdTest(); break;
   case "results": cmdResults(); break;
   case "list": cmdList(); break;
+  case "balance": cmdBalance(); break;
   case "help": case "--help": case "-h": case undefined: showHelp(); break;
   default:
     console.error(red(`Unknown command: ${cmd}`));
