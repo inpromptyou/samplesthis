@@ -548,7 +548,7 @@ function Dashboard() {
       </aside>
 
       {/* ══════ MAIN CONTENT ══════ */}
-      <main className="dash-main" style={{ marginLeft: 240, flex: 1, minHeight: "100vh" }}>
+      <main className="dash-main" style={{ marginLeft: 240, flex: 1, minHeight: "100vh", background: "var(--dash-bg)" }}>
         {/* Top bar (mobile) */}
         <header className="dash-topbar" style={{
           display: "none", position: "sticky", top: 0, zIndex: 50,
