@@ -18,12 +18,13 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Flinchify | Hire Real Users to Test Your App | Usability Testing Marketplace",
-    description: "Hire real users to test your app. Get paid to test websites. Pay-per-tester usability testing marketplace — no subscriptions, real feedback in hours.",
+    title: "Flinchify — The Human Signal Layer for AI-Built Products",
+    description: "AI builds the product. Humans find the friction. Real testers deliver screen recordings, bug reports, and every flinch moment — in hours, not weeks.",
     type: "website",
     siteName: "Flinchify",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Flinchify — The human signal layer for startups" }],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: { card: "summary_large_image", images: ["/og-image.jpg"] },
   keywords: ["hire real users to test your app", "get paid to test websites", "usability testing marketplace", "user testing platform", "pay testers to test my app", "app testing", "beta testing", "UX feedback", "website usability testing", "remote user testing", "human testers"],
 };
 
