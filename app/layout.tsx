@@ -29,6 +29,7 @@ export const metadata: Metadata = {
 
 import GlobalAuth from "@/components/GlobalAuth";
 import SupportChat from "@/components/SupportChat";
+import { Analytics } from "@vercel/analytics/next";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <GlobalAuth />
         <SupportChat />
+        <Analytics />
       </body>
     </html>
   );
