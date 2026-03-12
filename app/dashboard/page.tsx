@@ -1835,7 +1835,7 @@ function AdminTab() {
                       <p style={{ fontSize: 10, color: "var(--dash-text-dim)", margin: 0 }}>{aNum(o.testers_count)} testers</p>
                     </div>
                   </div>
-                  {o.description && <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: "0 0 8px" }}>{aStr(o.description)}</p>}
+                  {o.description ? <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: "0 0 8px" }}>{aStr(o.description)}</p> : null}
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     {aStr(o.status) === "pending_payment" && <ABtn onClick={() => act("PATCH", { type: "order", id: o.id, status: "paid" })} color="#16A34A">Mark Paid</ABtn>}
                     {aStr(o.status) === "paid" && <ABtn onClick={() => act("PATCH", { type: "order", id: o.id, status: "completed" })} color="#2563EB">Complete</ABtn>}
