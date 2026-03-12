@@ -307,6 +307,49 @@ function Home() {
           </div>
         </section>
 
+        {/* ═══ MOBILE — TEST ANYWHERE ═══ */}
+        <section className="py-16 sm:py-24 px-5 sm:px-6">
+          <div className="max-w-[1100px] mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+              <ScrollReveal>
+                <div>
+                  <h2 className="h text-[1.5rem] sm:text-2xl md:text-[2.5rem] font-bold tracking-[-0.03em] leading-tight mb-4 sm:mb-5 text-[var(--text)]">
+                    Complete tests anywhere, anytime
+                  </h2>
+                  <p className="text-[14px] sm:text-[16px] text-[var(--text-muted)] leading-[1.7] mb-6">
+                    Pick up test jobs on your phone during your commute, lunch break, or couch time. The full dashboard works on mobile — browse jobs, submit feedback, and get paid without touching a laptop.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg grad-warm-subtle flex items-center justify-center shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      </div>
+                      <span className="text-[13px] sm:text-[14px] text-[var(--text)]">Full mobile dashboard</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg grad-warm-subtle flex items-center justify-center shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      </div>
+                      <span className="text-[13px] sm:text-[14px] text-[var(--text)]">Set up payouts and get paid same day</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg grad-warm-subtle flex items-center justify-center shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      </div>
+                      <span className="text-[13px] sm:text-[14px] text-[var(--text)]">Push notifications for new test jobs</span>
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
+              <ScrollReveal delay={200}>
+                <div className="flex justify-center">
+                  <img src="/mobile-preview.jpg" alt="Flinchify mobile dashboard" width={380} height={480} className="rounded-2xl" style={{ maxWidth: "100%", height: "auto" }} />
+                </div>
+              </ScrollReveal>
+            </div>
+          </div>
+        </section>
+
         {/* ═══ HOW IT WORKS ═══ */}
         <section className="warm-section py-16 sm:py-24 px-5 sm:px-6">
           <div className="max-w-[1100px] mx-auto">
