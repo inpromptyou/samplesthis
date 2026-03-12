@@ -155,13 +155,13 @@ function Home() {
             </div>
 
             <h1 className="h text-[1.75rem] sm:text-[clamp(2.4rem,5.5vw,4rem)] font-bold leading-[1.15] tracking-[-0.035em] mb-5 sm:mb-6 hero-anim ha-2">
-              <span className="block sm:inline">Find the flinch before</span>{" "}
-              <span className="whitespace-nowrap">your{" "}<span className="grad-warm inline"><TypingRotate /></span>{" "}do</span>
+              <span className="block sm:inline">The human signal layer</span>{" "}
+              <span className="whitespace-nowrap">for{" "}<span className="grad-warm inline"><TypingRotate /></span></span>
             </h1>
 
-            <p className="text-[15px] sm:text-[17px] text-[var(--text-muted)] max-w-[480px] mx-auto mb-8 sm:mb-10 leading-[1.6] hero-anim ha-3 px-2">
-              Real humans matched to your audience test your app and find every
-              friction point. Set your own budget, pay per tester.
+            <p className="text-[15px] sm:text-[17px] text-[var(--text-muted)] max-w-[520px] mx-auto mb-8 sm:mb-10 leading-[1.6] hero-anim ha-3 px-2">
+              AI builds the product. Humans find the friction. Real testers matched to your audience
+              deliver screen recordings, bug reports, and every flinch moment — in hours, not weeks.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 hero-anim ha-4">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 
-const WORDS = ["users", "clients", "customers", "buyers", "players", "audience", "critics"];
+const WORDS = ["AI-built products", "indie builders", "SaaS teams", "vibe coders", "startups", "product teams", "solo founders"];
 const TYPE_SPEED = 160;
 const DELETE_SPEED = 80;
 const PAUSE_AFTER_TYPE = 2800;
