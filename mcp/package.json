@@ -1,15 +1,38 @@
 {
   "name": "flinchify-mcp",
-  "version": "0.1.0",
-  "description": "Flinchify MCP server — human usability testing for AI agents",
+  "version": "0.1.2",
+  "description": "Flinchify MCP server — human usability testing for AI agents. Works with Claude Desktop, Cursor, OpenAI, Gemini, Grok, and any MCP-compatible client.",
   "type": "module",
   "bin": {
-    "flinchify-mcp": "./server.mjs"
+    "flinchify-mcp": "server.mjs"
   },
-  "keywords": ["mcp", "flinchify", "testing", "usability", "claude"],
+  "keywords": [
+    "mcp",
+    "flinchify",
+    "testing",
+    "usability",
+    "claude",
+    "openai",
+    "gemini",
+    "grok",
+    "cursor",
+    "human-testing",
+    "model-context-protocol"
+  ],
   "author": "Flinchify",
   "license": "MIT",
   "homepage": "https://flinchify.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/inpromptyou/samplesthis.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "server.mjs",
+    "README.md"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   }
