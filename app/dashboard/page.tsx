@@ -401,9 +401,8 @@ function Dashboard() {
         position: "fixed", top: 0, left: 0, bottom: 0,
         width: 240, background: "var(--dash-sidebar)", borderRight: "1px solid var(--dash-border)",
         display: "flex", flexDirection: "column", zIndex: 100,
-        transform: sidebarOpen ? "translateX(0)" : undefined,
         transition: "transform 0.2s ease",
-      }} className="sidebar-aside">
+      }} className={`sidebar-aside ${sidebarOpen ? "sidebar-open" : ""}`}>
         {/* Logo */}
         <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
@@ -1254,7 +1253,7 @@ function Dashboard() {
       <style>{`
         @media (max-width: 768px) {
           .sidebar-aside { transform: translateX(-100%) !important; }
-          .sidebar-aside[style*="translateX(0)"] { transform: translateX(0) !important; }
+          .sidebar-aside.sidebar-open { transform: translateX(0) !important; }
           .sidebar-close { display: block !important; }
           .dash-main { margin-left: 0 !important; }
           .dash-topbar { display: flex !important; }
