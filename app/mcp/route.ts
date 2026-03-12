@@ -211,17 +211,18 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 204 });
   }
 
+  // tools/list — public, no auth needed (so Claude can discover tools)
+  if (method === "tools/list") {
+    return NextResponse.json(jsonrpc(id, { tools: TOOLS }), {
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  }
+
   // Everything else requires auth
   const user = await authenticateApiKey(authHeader);
   if (!user) {
     return NextResponse.json(jsonrpcError(id, -32600, "Invalid API key. Get one at https://flinchify.com/dashboard → API Keys"), {
       status: 401,
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
-  }
-
-  if (method === "tools/list") {
-    return NextResponse.json(jsonrpc(id, { tools: TOOLS }), {
       headers: { "Access-Control-Allow-Origin": "*" },
     });
   }
