@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const applicants = await sql`
       SELECT a.id, a.status, a.note, a.created_at, a.feedback, a.screen_recording_url, a.submitted_at, a.payout_cents,
-             a.deadline_at, a.accepted_at,
+             a.deadline_at, a.accepted_at, a.rating, a.rating_comment, a.rated_at,
              t.id as tester_id, t.name, t.email, t.location, t.country, t.bio, t.devices, t.interests,
              t.tests_completed, t.avg_rating, t.linkedin, t.portfolio, t.twitter, t.github
       FROM applications a

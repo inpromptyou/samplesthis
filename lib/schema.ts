@@ -118,6 +118,9 @@ export async function ensureTables() {
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS booking_deadline TIMESTAMP`;
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS api_created BOOLEAN DEFAULT false`;
     await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS recording_url VARCHAR(500)`;
+    await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS rating INTEGER`;
+    await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS rating_comment TEXT`;
+    await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS rated_at TIMESTAMP`;
 
     // Notifications
     await sql`CREATE TABLE IF NOT EXISTS notifications (

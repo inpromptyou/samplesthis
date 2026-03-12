@@ -25,6 +25,7 @@ interface MyApp {
   price_per_tester_cents: number; feedback: string | null;
   screen_recording_url: string | null; payout_cents: number;
   payout_transfer_id: string | null; created_at: string; submitted_at: string | null;
+  rating: number | null; rating_comment: string | null; rated_at: string | null;
 }
 
 interface Booking {
@@ -1033,8 +1034,39 @@ function Dashboard() {
                         )}
                         {(a.status === "submitted" || a.status === "completed") && a.feedback && (
                           <div style={{ marginTop: 12, background: "var(--dash-bg)", borderRadius: 8, padding: 12 }}>
-                            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", margin: "0 0 4px" }}>Your feedback</p>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--dash-text-dim)", margin: "0 0 4px" }}>Tester feedback</p>
                             <p style={{ fontSize: 12, color: "var(--dash-text-secondary)", margin: 0 }}>{a.feedback}</p>
+                            {/* Rating */}
+                            {a.rating ? (
+                              <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 11, color: "var(--dash-text-dim)" }}>Your rating:</span>
+                                {[1,2,3,4,5].map(s => (
+                                  <span key={s} style={{ fontSize: 16, color: s <= (a.rating || 0) ? "#F97316" : "var(--dash-border)" }}>★</span>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ marginTop: 10 }}>
+                                <p style={{ fontSize: 11, color: "var(--dash-text-dim)", margin: "0 0 6px" }}>Rate this feedback:</p>
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  {[1,2,3,4,5].map(s => (
+                                    <button key={s} onClick={async () => {
+                                      try {
+                                        const r = await fetch("/api/applications/rate", {
+                                          method: "POST", headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ application_id: a.id, rating: s }),
+                                        });
+                                        if (r.ok) { loadApplicants(managingJob!); }
+                                        else { const d = await r.json(); alert(d.error || "Failed"); }
+                                      } catch { alert("Failed to rate"); }
+                                    }}
+                                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--dash-border)", padding: 2, transition: "color 0.15s" }}
+                                    onMouseEnter={e => { const stars = e.currentTarget.parentElement?.children; if (stars) for (let i = 0; i < 5; i++) (stars[i] as HTMLElement).style.color = i < s ? "#F97316" : "var(--dash-border)"; }}
+                                    onMouseLeave={e => { const stars = e.currentTarget.parentElement?.children; if (stars) for (let i = 0; i < 5; i++) (stars[i] as HTMLElement).style.color = "var(--dash-border)"; }}
+                                    >★</button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                         {a.status === "pending" && <p style={{ fontSize: 12, color: "var(--dash-text-dim)", marginTop: 8 }}>Waiting for review.</p>}
