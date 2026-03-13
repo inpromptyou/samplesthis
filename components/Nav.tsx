@@ -22,7 +22,7 @@ const NAV_DROPDOWNS: { label: string; items: DropdownItemFull[] }[] = [
   {
     label: "For Testers",
     items: [
-      { href: "#", label: "Become a Tester", desc: "Sign up and start earning", authRequired: true, authMode: "tester" },
+      { href: "/dashboard?tab=explore", label: "Become a Tester", desc: "Sign up and start earning", authRequired: true, authMode: "login" },
       { href: "/explore", label: "Browse Jobs", desc: "See open test jobs" },
       { href: "#", label: "Tester Dashboard", desc: "Manage your tests", authRequired: true, authMode: "login" },
     ],
