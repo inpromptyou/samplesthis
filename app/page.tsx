@@ -603,66 +603,72 @@ function Home() {
           </div>
         </section>
 
-        {/* ═══ PRICING ═══ */}
+        {/* ═══ MCP INTEGRATIONS ═══ */}
         <section className="dark-section py-16 sm:py-20 px-5 sm:px-6">
-          <div className="max-w-[900px] mx-auto">
+          <div className="max-w-[1000px] mx-auto">
             <ScrollReveal>
               <div className="text-center mb-10 sm:mb-14">
+                <p className="h text-[10px] sm:text-[11px] font-medium text-orange-400 uppercase tracking-[0.2em] mb-3">Integrations</p>
                 <h2 className="h text-[1.5rem] sm:text-2xl md:text-[2.5rem] font-bold tracking-[-0.03em] mb-3 text-white">
-                  Simple math. No surprises.
+                  Your AI requests testers. Humans deliver results.
                 </h2>
                 <p className="text-[13px] sm:text-[15px] text-white/40 max-w-lg mx-auto">
-                  Post a job, set the number of testers and what you'll pay each one. Define the tasks they need to complete. That's your total.
+                  Flinchify connects to your AI workflow via MCP. Your agent creates test jobs, real humans complete them, and results come back structured — no manual work.
                 </p>
               </div>
             </ScrollReveal>
 
-            {/* Formula */}
-            <ScrollReveal delay={100}>
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 sm:p-8 text-center mb-6 sm:mb-8">
-                <p className="h text-xl sm:text-3xl font-bold text-white">
-                  Testers <span className="text-orange-400 mx-1">×</span> Your price <span className="text-orange-400 mx-1">=</span> Total
-                </p>
-                <p className="text-[12px] sm:text-[13px] text-white/30 mt-2">$5 minimum per tester. No platform fee. No subscriptions.</p>
-              </div>
-            </ScrollReveal>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+              {/* Video / walkthrough */}
+              <ScrollReveal delay={100}>
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+                  <video src="/mcp-walkthrough.mp4" controls playsInline preload="metadata"
+                    className="w-full aspect-video"
+                    poster="/og-image.jpg" />
+                </div>
+              </ScrollReveal>
 
-            {/* Example jobs */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              {[
-                { title: "Quick check", testers: 2, price: 5, tasks: "Sign up + report friction", time: "15 min", total: 10 },
-                { title: "Full audit", testers: 5, price: 12, tasks: "Complete onboarding, log every flinch", time: "30 min", total: 60, pop: true },
-                { title: "Deep dive", testers: 10, price: 20, tasks: "3-day usage, daily friction logs", time: "3 days", total: 200 },
-              ].map((ex, i) => (
-                <ScrollReveal key={ex.title} delay={i * 80}>
-                  <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-6 ${ex.pop ? "border-orange-500/20 bg-white/[0.06]" : "border-white/[0.06] bg-white/[0.02]"}`}>
-                    {ex.pop && <span className="h inline-block text-orange-400 text-[9px] sm:text-[10px] font-bold mb-2 uppercase tracking-wider">Most common</span>}
-                    <p className="h text-[14px] sm:text-[15px] font-semibold text-white mb-3">{ex.title}</p>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-[12px] sm:text-[13px]">
-                        <span className="text-white/40">Testers</span>
-                        <span className="text-white font-medium">{ex.testers}</span>
+              {/* Integration cards */}
+              <ScrollReveal delay={200}>
+                <div className="space-y-4">
+                  {[
+                    { name: "Claude Desktop", icon: "claude", desc: "Add Flinchify as a remote MCP server — paste one URL and your AI can request human testing." },
+                    { name: "Cursor", icon: "cursor", desc: "Connect via MCP config. Your coding agent creates tests and reads results without leaving the editor." },
+                    { name: "ChatGPT", icon: "chatgpt", desc: "Use the REST API or MCP integration to get human feedback directly inside your GPT workflow." },
+                    { name: "Any MCP Client", icon: null, desc: "Windsurf, Grok, Gemini, or any tool that supports Model Context Protocol." },
+                  ].map((tool) => (
+                    <div key={tool.name} className="flex items-start gap-4 p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:border-orange-500/20 transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                        {tool.icon ? (
+                          <img src={`/brands/${tool.icon}.svg`} alt={tool.name} className="w-5 h-5" />
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        )}
                       </div>
-                      <div className="flex justify-between text-[12px] sm:text-[13px]">
-                        <span className="text-white/40">Per tester</span>
-                        <span className="text-white font-medium">${ex.price}</span>
-                      </div>
-                      <div className="flex justify-between text-[12px] sm:text-[13px]">
-                        <span className="text-white/40">Time limit</span>
-                        <span className="text-white font-medium">{ex.time}</span>
+                      <div>
+                        <p className="h text-[14px] font-semibold text-white mb-1">{tool.name}</p>
+                        <p className="text-[12px] text-white/40 leading-[1.6]">{tool.desc}</p>
                       </div>
                     </div>
-                    <div className="border-t border-white/[0.06] pt-3 mb-3">
-                      <div className="flex justify-between text-[13px] sm:text-[14px]">
-                        <span className="text-white/40">Total</span>
-                        <span className="h text-white font-bold">${ex.total}</span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] sm:text-[11px] text-white/25 leading-[1.5]">{ex.tasks}</p>
+                  ))}
+
+                  <div className="pt-2">
+                    <code className="block text-[12px] text-orange-400/80 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-3 font-mono">
+                      npx flinchify-mcp
+                    </code>
+                    <p className="text-[11px] text-white/25 mt-2">Or paste <span className="text-white/40">https://flinchify.com/mcp</span> as a remote MCP server</p>
                   </div>
-                </ScrollReveal>
-              ))}
+                </div>
+              </ScrollReveal>
             </div>
+
+            <ScrollReveal delay={300}>
+              <div className="text-center mt-10">
+                <Link href="/integrations" className="btn bg-white text-[var(--dark)] hover:bg-white/90 btn-lg">
+                  View all integrations
+                </Link>
+              </div>
+            </ScrollReveal>
           </div>
         </section>
 
