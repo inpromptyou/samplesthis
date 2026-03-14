@@ -31,6 +31,7 @@ export const metadata: Metadata = {
 import GlobalAuth from "@/components/GlobalAuth";
 import SupportChat from "@/components/SupportChat";
 import { Analytics } from "@vercel/analytics/next";
+import { WAITLIST_MODE } from "@/lib/config";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -66,8 +67,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         {children}
-        <GlobalAuth />
-        <SupportChat />
+        {!WAITLIST_MODE && <GlobalAuth />}
+        {!WAITLIST_MODE && <SupportChat />}
         <Analytics />
       </body>
     </html>
