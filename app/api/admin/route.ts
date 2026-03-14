@@ -27,6 +27,28 @@ export async function GET(req: NextRequest) {
   const sql = getSql();
   const tab = req.nextUrl.searchParams.get("tab") || "overview";
 
+  if (tab === "waitlist") {
+    try {
+      await sql`ALTER TABLE tester_interest ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'tester'`;
+      await sql`ALTER TABLE tester_interest ADD COLUMN IF NOT EXISTS source TEXT`;
+    } catch { /* table may not exist yet */ }
+
+    let entries: any[] = [];
+    let stats = { total: 0, testers: 0, developers: 0, both: 0, today: 0, thisWeek: 0 };
+    try {
+      entries = await sql`SELECT * FROM tester_interest ORDER BY created_at DESC LIMIT 500`;
+      const [totalR] = await sql`SELECT COUNT(*)::int as c FROM tester_interest`;
+      const [testerR] = await sql`SELECT COUNT(*)::int as c FROM tester_interest WHERE role = 'tester' OR role IS NULL`;
+      const [devR] = await sql`SELECT COUNT(*)::int as c FROM tester_interest WHERE role = 'developer'`;
+      const [bothR] = await sql`SELECT COUNT(*)::int as c FROM tester_interest WHERE role = 'both'`;
+      const [todayR] = await sql`SELECT COUNT(*)::int as c FROM tester_interest WHERE created_at >= CURRENT_DATE`;
+      const [weekR] = await sql`SELECT COUNT(*)::int as c FROM tester_interest WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'`;
+      stats = { total: totalR.c, testers: testerR.c, developers: devR.c, both: bothR.c, today: todayR.c, thisWeek: weekR.c };
+    } catch { /* table doesn't exist yet */ }
+
+    return NextResponse.json({ entries, stats });
+  }
+
   if (tab === "overview") {
     const [testersCount] = await sql`SELECT COUNT(*)::int as count FROM testers`;
     const [ordersCount] = await sql`SELECT COUNT(*)::int as count FROM orders`;

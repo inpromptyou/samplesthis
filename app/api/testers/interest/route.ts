@@ -8,24 +8,32 @@ async function ensureTable() {
       id SERIAL PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       name TEXT,
+      role TEXT DEFAULT 'tester',
+      source TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE tester_interest ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'tester'`;
+  await sql`ALTER TABLE tester_interest ADD COLUMN IF NOT EXISTS source TEXT`;
 }
 
 export async function POST(request: Request) {
   try {
-    const { email, name } = await request.json();
+    const { email, name, role, source } = await request.json();
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
 
+    const validRole = ["tester", "developer", "both"].includes(role) ? role : "tester";
     const sql = getSql();
     await ensureTable();
 
     await sql`
-      INSERT INTO tester_interest (email, name) VALUES (${email.toLowerCase().trim()}, ${name?.trim() || null})
-      ON CONFLICT (email) DO UPDATE SET name = COALESCE(${name?.trim() || null}, tester_interest.name)
+      INSERT INTO tester_interest (email, name, role, source) 
+      VALUES (${email.toLowerCase().trim()}, ${name?.trim() || null}, ${validRole}, ${source?.trim() || null})
+      ON CONFLICT (email) DO UPDATE SET 
+        name = COALESCE(${name?.trim() || null}, tester_interest.name),
+        role = ${validRole}
     `;
 
     const countRes = await sql`SELECT COUNT(*) FROM tester_interest`;

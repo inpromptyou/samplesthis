@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-type Tab = "overview" | "orders" | "testers" | "applications";
+type Tab = "overview" | "waitlist" | "orders" | "testers" | "applications";
 type Obj = Record<string, unknown>;
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "overview", label: "Overview", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  { key: "waitlist", label: "Waitlist", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
   { key: "orders", label: "Orders", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
   { key: "testers", label: "Testers", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" },
   { key: "applications", label: "Applications", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
@@ -178,6 +179,66 @@ export default function AdminPanel() {
             </div>
           </div>
         )}
+
+        {tab === "waitlist" && (() => {
+          const entries = (data.entries || []) as Obj[];
+          const wStats = (data.stats || {}) as Record<string, number>;
+          const exportCSV = () => {
+            const header = "Email,Name,Role,Signed Up\n";
+            const rows = entries.map(e => `${s(e.email)},${s(e.name).replace(/,/g, "")},${s(e.role) || "tester"},${new Date(s(e.created_at)).toISOString()}`).join("\n");
+            const blob = new Blob([header + rows], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = `flinchify-waitlist-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+            URL.revokeObjectURL(url);
+          };
+          return (
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <h1 className="h text-lg font-bold text-[var(--text)]">Waitlist ({wStats.total || 0})</h1>
+                <button onClick={exportCSV} className="btn btn-outline text-[12px] !py-1.5 !px-4">Export CSV</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                {[
+                  { l: "Total Signups", v: wStats.total || 0 },
+                  { l: "Testers", v: wStats.testers || 0, c: "text-green-600" },
+                  { l: "Developers", v: wStats.developers || 0, c: "text-blue-600" },
+                  { l: "Both", v: wStats.both || 0, c: "text-purple-600" },
+                  { l: "Today", v: wStats.today || 0, c: "text-orange-600" },
+                  { l: "This Week", v: wStats.thisWeek || 0 },
+                ].map(x => (
+                  <div key={x.l} className="bg-white rounded-xl border border-black/[0.04] p-4">
+                    <p className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider font-medium mb-1">{x.l}</p>
+                    <p className={`h text-xl font-bold ${x.c || "text-[var(--text)]"}`}>{x.v}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                {entries.map((e) => (
+                  <div key={n(e.id)} className="bg-white rounded-xl border border-black/[0.04] p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-200 to-amber-100 flex items-center justify-center text-[12px] font-bold text-orange-700 shrink-0">
+                        {(s(e.name) || s(e.email)).charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[13px] font-semibold text-[var(--text)] truncate">{s(e.name) || "No name"}</span>
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            s(e.role) === "developer" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                            s(e.role) === "both" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                            "bg-green-50 text-green-700 border-green-200"
+                          }`}>{s(e.role) || "tester"}</span>
+                        </div>
+                        <p className="text-[12px] text-[var(--text-dim)] truncate">{s(e.email)}</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-[var(--text-dim)] shrink-0">{timeAgo(e.created_at)}</span>
+                  </div>
+                ))}
+                {entries.length === 0 && <p className="text-[var(--text-dim)] py-8 text-center">No signups yet. Start marketing!</p>}
+              </div>
+            </div>
+          );
+        })()}
 
         {tab === "orders" && (
           <div>

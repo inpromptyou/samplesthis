@@ -7,6 +7,8 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 import TypingRotate from "@/components/TypingRotate";
+import { WAITLIST_MODE } from "@/lib/config";
+import WaitlistPage from "@/components/WaitlistHero";
 
 const SAMPLE_JOBS = [
   { app: "Fitness tracking app", audience: "Gym-goers, 25-40", testers: 5, budget: 12, time: "2h ago", applied: 8 },
@@ -103,6 +105,7 @@ function TesterInterest() {
 }
 
 export default function HomePage() {
+  if (WAITLIST_MODE) return <WaitlistPage />;
   return (
     <Suspense fallback={null}>
       <Home />
